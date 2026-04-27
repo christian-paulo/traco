@@ -1,17 +1,19 @@
 'use client';
 
-import { Loader2 } from 'lucide-react';
+import { AlertTriangle, Loader2 } from 'lucide-react';
 import { useTransition } from 'react';
 import { toast } from 'sonner';
 
 import {
   AlertDialog,
   AlertDialogAction,
+  AlertDialogBody,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
+  AlertDialogMedia,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { deleteClientRecord } from '@/server/actions/clients';
@@ -45,9 +47,14 @@ export function DeleteClientDialog({ open, onOpenChange, clientId, clientName, o
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle className="font-serif text-2xl font-medium tracking-tight">
-            Excluir cliente?
-          </AlertDialogTitle>
+          <AlertDialogMedia>
+            <AlertTriangle />
+          </AlertDialogMedia>
+          <div className="flex flex-col gap-1">
+            <AlertDialogTitle>Excluir cliente?</AlertDialogTitle>
+          </div>
+        </AlertDialogHeader>
+        <AlertDialogBody>
           <AlertDialogDescription>
             {clientName ? (
               <>
@@ -59,7 +66,7 @@ export function DeleteClientDialog({ open, onOpenChange, clientId, clientName, o
               'Esta ação não pode ser desfeita. Todos os dados, fichas, atendimentos e fotos desta cliente serão removidos permanentemente.'
             )}
           </AlertDialogDescription>
-        </AlertDialogHeader>
+        </AlertDialogBody>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isPending}>Cancelar</AlertDialogCancel>
           <AlertDialogAction
@@ -68,7 +75,6 @@ export function DeleteClientDialog({ open, onOpenChange, clientId, clientName, o
               handleConfirm();
             }}
             disabled={isPending}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
             {isPending ? (
               <>

@@ -9,20 +9,16 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import { Form, FormField } from '@/components/ui/form';
+import { FormFieldPro } from '@/components/ui/form-field-pro';
+import { FormSection } from '@/components/ui/form-section';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import type { ProcedureRow } from '@/lib/queries/procedures';
@@ -30,7 +26,7 @@ import { appointmentSchema, type AppointmentInput } from '@/lib/validations/appo
 import { createAppointment, updateAppointment } from '@/server/actions/appointments';
 
 import { ClientCombobox, type ClientLite } from './client-combobox';
-import { ProcedureRadioCards } from './procedure-radio-cards';
+import { ProcedureSelect } from './procedure-select';
 
 export type EditableAppointment = {
   id: string;
@@ -134,143 +130,138 @@ export function AppointmentFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="font-serif text-2xl font-medium tracking-tight">
-            {isEdit ? 'Editar atendimento' : 'Novo atendimento'}
-          </DialogTitle>
-          <DialogDescription className="text-xs font-medium uppercase tracking-[0.3em]">
-            {isEdit ? 'Atualize os dados' : 'Registre um atendimento realizado'}
+          <DialogTitle>{isEdit ? 'Editar atendimento' : 'Novo atendimento'}</DialogTitle>
+          <DialogDescription>
+            {isEdit ? 'Atualize os dados do atendimento.' : 'Registre um atendimento realizado.'}
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4 pt-2">
-            <FormField
-              control={form.control}
-              name="client_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Cliente *</FormLabel>
-                  <FormControl>
-                    <ClientCombobox
-                      clients={clients}
-                      value={field.value || null}
-                      onChange={field.onChange}
-                      disabled={isPending || lockedClient}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            <DialogBody>
+              <FormSection title="Para qual cliente?">
+                <FormField
+                  control={form.control}
+                  name="client_id"
+                  render={({ field }) => (
+                    <FormFieldPro label="Cliente" required>
+                      <ClientCombobox
+                        clients={clients}
+                        value={field.value || null}
+                        onChange={field.onChange}
+                        disabled={isPending || lockedClient}
+                      />
+                    </FormFieldPro>
+                  )}
+                />
+              </FormSection>
 
-            <FormField
-              control={form.control}
-              name="procedure_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Procedimento *</FormLabel>
-                  <FormControl>
-                    <ProcedureRadioCards
-                      procedures={procedures}
-                      value={field.value || null}
-                      onChange={(p) => {
-                        field.onChange(p.id);
-                        const currentPrice = form.getValues('price');
-                        if (!isEdit || !currentPrice) {
-                          form.setValue('price', p.default_price, { shouldValidate: true });
-                        }
-                      }}
-                      disabled={isPending}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <FormSection title="Procedimento realizado">
+                <FormField
+                  control={form.control}
+                  name="procedure_id"
+                  render={({ field }) => (
+                    <FormFieldPro label="Procedimento" required>
+                      <ProcedureSelect
+                        procedures={procedures}
+                        value={field.value || null}
+                        onChange={(p) => {
+                          field.onChange(p.id);
+                          const currentPrice = form.getValues('price');
+                          if (!isEdit || !currentPrice) {
+                            form.setValue('price', p.default_price, { shouldValidate: true });
+                          }
+                        }}
+                        disabled={isPending}
+                      />
+                    </FormFieldPro>
+                  )}
+                />
+              </FormSection>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="performed_at"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Quando foi realizado? *</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="datetime-local"
+              <FormSection title="Detalhes">
+                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="performed_at"
+                    render={({ field }) => (
+                      <FormFieldPro label="Data e hora" required>
+                        <Input
+                          type="datetime-local"
+                          disabled={isPending}
+                          value={field.value ?? ''}
+                          onChange={field.onChange}
+                        />
+                      </FormFieldPro>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="price"
+                    render={({ field }) => (
+                      <FormFieldPro label="Valor cobrado" required>
+                        <div className="relative">
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                            R$
+                          </span>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            disabled={isPending}
+                            value={Number.isFinite(field.value) ? field.value : ''}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              field.onChange(v === '' ? 0 : Number(v));
+                            }}
+                            className="pl-10"
+                          />
+                        </div>
+                      </FormFieldPro>
+                    )}
+                  />
+                </div>
+              </FormSection>
+
+              <FormSection title="Observações">
+                <FormField
+                  control={form.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormFieldPro label="Anotações">
+                      <Textarea
+                        rows={3}
+                        placeholder="Detalhes do atendimento (opcional)"
                         disabled={isPending}
                         value={field.value ?? ''}
                         onChange={field.onChange}
                       />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                    </FormFieldPro>
+                  )}
+                />
+              </FormSection>
+            </DialogBody>
 
-              <FormField
-                control={form.control}
-                name="price"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Valor cobrado *</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                          R$
-                        </span>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          disabled={isPending}
-                          value={Number.isFinite(field.value) ? field.value : ''}
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            field.onChange(v === '' ? 0 : Number(v));
-                          }}
-                          className="pl-9"
-                        />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Observações</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      rows={3}
-                      placeholder="Detalhes do atendimento (opcional)"
-                      disabled={isPending}
-                      value={field.value ?? ''}
-                      onChange={field.onChange}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <DialogFooter className="pt-2">
+            <DialogFooter>
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
                 onClick={() => onOpenChange(false)}
                 disabled={isPending}
+                size="default"
+                className="h-10 sm:w-auto w-full"
               >
                 Cancelar
               </Button>
-              <Button type="submit" variant="premium" size="xl" disabled={isPending}>
+              <Button
+                type="submit"
+                variant="default"
+                disabled={isPending}
+                size="default"
+                className="h-10 sm:w-auto w-full"
+              >
                 {isPending ? (
                   <>
                     <Loader2 className="size-4 animate-spin" />

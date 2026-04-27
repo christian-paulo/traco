@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/select';
 import type { ProcedureRow } from '@/lib/queries/procedures';
 
-const ALL_PROCEDURES = '__all__';
+const ALL_PROCEDURES = 'all';
 
 type Props = {
   procedures: ProcedureRow[];
@@ -86,8 +86,24 @@ export function AppointmentsToolbar({
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
       <Select value={procedureValue} onValueChange={setProcedureId}>
-        <SelectTrigger className="h-11 sm:w-64">
-          <SelectValue placeholder="Todos os procedimentos" />
+        <SelectTrigger className="sm:w-64">
+          <SelectValue>
+            {(value: string | null) => {
+              if (!value || value === ALL_PROCEDURES) return 'Todos os procedimentos';
+              const proc = procedures.find((p) => p.id === value);
+              if (!proc) return 'Todos os procedimentos';
+              return (
+                <span className="flex items-center gap-2">
+                  <span
+                    className="size-2 rounded-full"
+                    style={{ backgroundColor: proc.color }}
+                    aria-hidden
+                  />
+                  {proc.name}
+                </span>
+              );
+            }}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
           <SelectItem value={ALL_PROCEDURES}>Todos os procedimentos</SelectItem>

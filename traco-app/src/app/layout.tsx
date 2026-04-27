@@ -30,7 +30,21 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="pt-BR" className={`${playfair.variable} ${montserrat.variable} h-full antialiased`}>
       <body className="bg-background text-foreground flex min-h-full flex-col font-sans">
         {children}
-        <Toaster richColors closeButton position="top-right" />
+        <Toaster
+          richColors
+          closeButton
+          position="top-right"
+          duration={4000}
+          toastOptions={{
+            classNames: {
+              toast:
+                'border border-cream-dark bg-card text-foreground shadow-lg rounded-xl font-sans',
+              title: 'font-medium text-sm',
+              description: 'text-muted-foreground text-xs',
+              closeButton: 'border-cream-dark',
+            },
+          }}
+        />
       </body>
     </html>
   );

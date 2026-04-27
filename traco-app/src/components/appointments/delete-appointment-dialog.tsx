@@ -1,17 +1,19 @@
 'use client';
 
-import { Loader2 } from 'lucide-react';
+import { AlertTriangle, Loader2 } from 'lucide-react';
 import { useTransition } from 'react';
 import { toast } from 'sonner';
 
 import {
   AlertDialog,
   AlertDialogAction,
+  AlertDialogBody,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
+  AlertDialogMedia,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { deleteAppointment } from '@/server/actions/appointments';
@@ -44,14 +46,19 @@ export function DeleteAppointmentDialog({ open, onOpenChange, appointmentId, onD
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle className="font-serif text-2xl font-medium tracking-tight">
-            Excluir atendimento?
-          </AlertDialogTitle>
+          <AlertDialogMedia>
+            <AlertTriangle />
+          </AlertDialogMedia>
+          <div className="flex flex-col gap-1">
+            <AlertDialogTitle>Excluir atendimento?</AlertDialogTitle>
+          </div>
+        </AlertDialogHeader>
+        <AlertDialogBody>
           <AlertDialogDescription>
             Esta ação removerá o registro deste atendimento e o impacto no faturamento. Não pode ser
             desfeita.
           </AlertDialogDescription>
-        </AlertDialogHeader>
+        </AlertDialogBody>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isPending}>Cancelar</AlertDialogCancel>
           <AlertDialogAction
@@ -60,7 +67,6 @@ export function DeleteAppointmentDialog({ open, onOpenChange, appointmentId, onD
               handleConfirm();
             }}
             disabled={isPending}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
             {isPending ? (
               <>

@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-const ALL_TAGS_VALUE = '__all__';
+const ALL_TAGS_VALUE = 'all';
 
 type Props = {
   initialSearch: string;
@@ -78,8 +78,13 @@ export function ClientsToolbar({ initialSearch, initialTag, availableTags }: Pro
         ) : null}
       </div>
       <Select value={tagValue} onValueChange={setTag}>
-        <SelectTrigger className="h-11 sm:w-56">
-          <SelectValue placeholder="Todas as tags" />
+        <SelectTrigger className="sm:w-56">
+          <SelectValue>
+            {(value: string | null) => {
+              if (!value || value === ALL_TAGS_VALUE) return 'Todas as tags';
+              return value;
+            }}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
           <SelectItem value={ALL_TAGS_VALUE}>Todas as tags</SelectItem>

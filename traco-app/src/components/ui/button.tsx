@@ -21,7 +21,9 @@ const buttonVariants = cva(
         ghost:
           "text-foreground hover:bg-cream-dark hover:text-foreground aria-expanded:bg-cream-dark aria-expanded:text-foreground transition-colors",
         destructive:
-          "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90 focus-visible:ring-destructive/30 transition-colors",
+        "destructive-soft":
+          "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
