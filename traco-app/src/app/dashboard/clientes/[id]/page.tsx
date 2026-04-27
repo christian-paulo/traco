@@ -4,8 +4,10 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { ClientDetailView } from '@/components/clients/client-detail-view';
+import { listAnamnesisFormsByClient } from '@/lib/queries/anamnesis';
 import { getAppointmentsByClientId } from '@/lib/queries/appointments';
 import { getClientById, listClients } from '@/lib/queries/clients';
+import { listPhotosByClient } from '@/lib/queries/photos';
 import { listProcedures } from '@/lib/queries/procedures';
 
 type Params = Promise<{ id: string }>;
@@ -23,11 +25,14 @@ export default async function ClientDetailPage({ params }: { params: Params }) {
   const client = await getClientById(id);
   if (!client) notFound();
 
-  const [appointments, { rows: clientsRows }, procedures] = await Promise.all([
-    getAppointmentsByClientId(id),
-    listClients({}),
-    listProcedures(false),
-  ]);
+  const [appointments, { rows: clientsRows }, procedures, anamnesisForms, photos] =
+    await Promise.all([
+      getAppointmentsByClientId(id),
+      listClients({}),
+      listProcedures(false),
+      listAnamnesisFormsByClient(id),
+      listPhotosByClient(id),
+    ]);
 
   const clients = clientsRows.map((c) => ({ id: c.id, full_name: c.full_name, phone: c.phone }));
 
@@ -49,6 +54,8 @@ export default async function ClientDetailPage({ params }: { params: Params }) {
         appointments={appointments}
         clients={clients}
         procedures={procedures}
+        anamnesisForms={anamnesisForms}
+        photos={photos}
       />
     </div>
   );

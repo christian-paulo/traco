@@ -4,18 +4,22 @@ import { Pencil, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+import { AnamnesisSection } from '@/components/anamnesis/anamnesis-section';
 import {
   ClientAppointmentsSection,
 } from '@/components/appointments/client-appointments-section';
 import type { ClientLite } from '@/components/appointments/client-combobox';
+import { PhotosSection } from '@/components/photos/photos-section';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatDate, getInitials } from '@/lib/format';
+import type { AnamnesisFormRow } from '@/lib/queries/anamnesis';
 import type { AppointmentRow } from '@/lib/queries/appointments';
 import type { ClientDetail } from '@/lib/queries/clients';
+import type { PhotoWithUrl } from '@/lib/queries/photos';
 import type { ProcedureRow } from '@/lib/queries/procedures';
 import { PHOTOTYPE_LABELS, type Phototype } from '@/lib/validations/client';
 
@@ -27,6 +31,8 @@ type Props = {
   appointments: AppointmentRow[];
   clients: ClientLite[];
   procedures: ProcedureRow[];
+  anamnesisForms: AnamnesisFormRow[];
+  photos: PhotoWithUrl[];
 };
 
 function phototypeLabel(value: string | null) {
@@ -37,7 +43,14 @@ function phototypeLabel(value: string | null) {
   return value;
 }
 
-export function ClientDetailView({ client, appointments, clients, procedures }: Props) {
+export function ClientDetailView({
+  client,
+  appointments,
+  clients,
+  procedures,
+  anamnesisForms,
+  photos,
+}: Props) {
   const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -182,23 +195,14 @@ export function ClientDetailView({ client, appointments, clients, procedures }: 
         </TabsContent>
 
         <TabsContent value="fichas" className="mt-6">
-          <Card variant="premium" className="bg-card border-0 ring-1 ring-[var(--border)] py-12">
-            <CardContent className="text-center">
-              <p className="font-serif text-lg italic text-muted-foreground">
-                Em breve. Fichas de anamnese aparecerão aqui.
-              </p>
-            </CardContent>
-          </Card>
+          <AnamnesisSection
+            client={{ id: client.id, full_name: client.full_name, email: client.email }}
+            forms={anamnesisForms}
+          />
         </TabsContent>
 
         <TabsContent value="fotos" className="mt-6">
-          <Card variant="premium" className="bg-card border-0 ring-1 ring-[var(--border)] py-12">
-            <CardContent className="text-center">
-              <p className="font-serif text-lg italic text-muted-foreground">
-                Em breve. Pasta de evolução com fotos.
-              </p>
-            </CardContent>
-          </Card>
+          <PhotosSection clientId={client.id} photos={photos} procedures={procedures} />
         </TabsContent>
       </Tabs>
 
