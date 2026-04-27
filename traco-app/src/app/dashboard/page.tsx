@@ -105,12 +105,14 @@ export default async function DashboardPage() {
           label="Atendimentos do mês"
           icon={CalendarCheck}
           value={stats.monthlyAppointments.toLocaleString('pt-BR')}
+          href="/dashboard/atendimentos"
         />
         <StatCard
           label="Faturamento do mês"
           icon={TrendingUp}
           prefix={revenue.prefix}
           value={revenue.value}
+          href="/dashboard/financeiro"
         />
         <StatCard
           label="Clientes a recuperar"

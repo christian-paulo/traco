@@ -4,7 +4,9 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { ClientDetailView } from '@/components/clients/client-detail-view';
-import { getClientById } from '@/lib/queries/clients';
+import { getAppointmentsByClientId } from '@/lib/queries/appointments';
+import { getClientById, listClients } from '@/lib/queries/clients';
+import { listProcedures } from '@/lib/queries/procedures';
 
 type Params = Promise<{ id: string }>;
 
@@ -21,6 +23,14 @@ export default async function ClientDetailPage({ params }: { params: Params }) {
   const client = await getClientById(id);
   if (!client) notFound();
 
+  const [appointments, { rows: clientsRows }, procedures] = await Promise.all([
+    getAppointmentsByClientId(id),
+    listClients({}),
+    listProcedures(false),
+  ]);
+
+  const clients = clientsRows.map((c) => ({ id: c.id, full_name: c.full_name, phone: c.phone }));
+
   return (
     <div className="flex flex-col gap-8">
       <nav
@@ -34,7 +44,12 @@ export default async function ClientDetailPage({ params }: { params: Params }) {
         <span className="text-foreground">{client.full_name}</span>
       </nav>
 
-      <ClientDetailView client={client} />
+      <ClientDetailView
+        client={client}
+        appointments={appointments}
+        clients={clients}
+        procedures={procedures}
+      />
     </div>
   );
 }

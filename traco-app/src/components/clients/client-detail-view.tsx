@@ -4,13 +4,19 @@ import { Pencil, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+import {
+  ClientAppointmentsSection,
+} from '@/components/appointments/client-appointments-section';
+import type { ClientLite } from '@/components/appointments/client-combobox';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { formatCurrency, formatDate, getInitials } from '@/lib/format';
+import { formatDate, getInitials } from '@/lib/format';
+import type { AppointmentRow } from '@/lib/queries/appointments';
 import type { ClientDetail } from '@/lib/queries/clients';
+import type { ProcedureRow } from '@/lib/queries/procedures';
 import { PHOTOTYPE_LABELS, type Phototype } from '@/lib/validations/client';
 
 import { ClientFormDialog, type EditableClient } from './client-form-dialog';
@@ -18,6 +24,9 @@ import { DeleteClientDialog } from './delete-client-dialog';
 
 type Props = {
   client: ClientDetail;
+  appointments: AppointmentRow[];
+  clients: ClientLite[];
+  procedures: ProcedureRow[];
 };
 
 function phototypeLabel(value: string | null) {
@@ -28,7 +37,7 @@ function phototypeLabel(value: string | null) {
   return value;
 }
 
-export function ClientDetailView({ client }: Props) {
+export function ClientDetailView({ client, appointments, clients, procedures }: Props) {
   const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -163,47 +172,13 @@ export function ClientDetailView({ client }: Props) {
         </TabsContent>
 
         <TabsContent value="atendimentos" className="mt-6">
-          <Card variant="premium" className="bg-card border-0 ring-1 ring-[var(--border)] py-6">
-            <CardHeader className="px-6 pb-2">
-              <CardTitle className="font-serif text-lg font-medium">
-                Últimos atendimentos
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="px-6">
-              {client.recent_appointments.length === 0 ? (
-                <p className="font-serif text-base italic text-muted-foreground">
-                  Em breve. Nenhum atendimento registrado ainda.
-                </p>
-              ) : (
-                <ul className="flex flex-col divide-y divide-[var(--border)]">
-                  {client.recent_appointments.map((apt) => (
-                    <li key={apt.id} className="flex items-center justify-between gap-4 py-3">
-                      <div className="flex items-center gap-3 min-w-0">
-                        {apt.procedure ? (
-                          <span
-                            className="size-2.5 shrink-0 rounded-full"
-                            style={{ backgroundColor: apt.procedure.color }}
-                            aria-hidden
-                          />
-                        ) : null}
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-foreground">
-                            {apt.procedure?.name ?? 'Procedimento'}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {formatDate(apt.performed_at, 'long')}
-                          </p>
-                        </div>
-                      </div>
-                      <span className="text-sm font-medium text-foreground">
-                        {formatCurrency(apt.price)}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
+          <ClientAppointmentsSection
+            clientId={client.id}
+            clientName={client.full_name}
+            appointments={appointments}
+            clients={clients}
+            procedures={procedures}
+          />
         </TabsContent>
 
         <TabsContent value="fichas" className="mt-6">

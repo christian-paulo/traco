@@ -15,6 +15,13 @@ const dateLongFormatter = new Intl.DateTimeFormat('pt-BR', {
   year: 'numeric',
 });
 
+const dateTimeShortFormatter = new Intl.DateTimeFormat('pt-BR', {
+  day: '2-digit',
+  month: 'short',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
 export function formatCurrency(value: number): string {
   return currencyFormatter.format(Number.isFinite(value) ? value : 0);
 }
@@ -23,6 +30,18 @@ export function formatDate(date: Date | string, format: 'short' | 'long' = 'shor
   const value = typeof date === 'string' ? new Date(date) : date;
   if (Number.isNaN(value.getTime())) return '';
   return (format === 'long' ? dateLongFormatter : dateShortFormatter).format(value);
+}
+
+export function formatDateTimeShort(date: Date | string): string {
+  const value = typeof date === 'string' ? new Date(date) : date;
+  if (Number.isNaN(value.getTime())) return '';
+  // "23 de abr., 14:30" → "23 abr · 14:30"
+  const parts = dateTimeShortFormatter.formatToParts(value);
+  const day = parts.find((p) => p.type === 'day')?.value ?? '';
+  const month = parts.find((p) => p.type === 'month')?.value.replace(/\.$/, '') ?? '';
+  const hour = parts.find((p) => p.type === 'hour')?.value ?? '';
+  const minute = parts.find((p) => p.type === 'minute')?.value ?? '';
+  return `${day} ${month} · ${hour}:${minute}`;
 }
 
 export function getFirstName(fullName: string): string {
