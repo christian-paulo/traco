@@ -28,12 +28,14 @@ type SubmitResult = { success: true; data: { id: string } } | { success: false; 
 const PDF_SIGNED_URL_TTL = 60 * 60 * 24 * 365; // 1 ano
 
 function getOrigin(headerList: Headers): string {
-  return (
-    headerList.get('origin') ??
-    (headerList.get('host') ? `https://${headerList.get('host')}` : null) ??
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    'http://localhost:3000'
-  );
+  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
+  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL;
+  const host = headerList.get('host');
+  if (host) {
+    const proto = host.includes('localhost') ? 'http' : 'https';
+    return `${proto}://${host}`;
+  }
+  return headerList.get('origin') ?? 'http://localhost:3000';
 }
 
 async function fetchTenantContext(tenantId: string) {
@@ -97,17 +99,19 @@ export async function createAnamnesisLink(clientId: string): Promise<CreateResul
 
   let emailSent = false;
   if (client.email) {
-    try {
-      await sendAnamnesisInvite({
-        to: client.email,
-        clientName: client.full_name,
-        designerName: profile.fullName ?? 'sua designer',
-        formUrl: publicUrl,
-      });
-      emailSent = true;
-    } catch {
-      // não bloqueia — o link já foi criado e pode ser copiado manualmente
+    console.log('[Action] createAnamnesisLink → cliente tem email, enviando para:', client.email);
+    const emailResult = await sendAnamnesisInvite({
+      to: client.email,
+      clientName: client.full_name,
+      designerName: profile.fullName ?? 'sua designer',
+      formUrl: publicUrl,
+    });
+    emailSent = emailResult.success;
+    if (!emailResult.success) {
+      console.error('[Action] createAnamnesisLink → falha no envio:', emailResult.error);
     }
+  } else {
+    console.log('[Action] createAnamnesisLink → cliente sem email, pulando envio');
   }
 
   revalidatePath(`/dashboard/clientes/${client.id}`);
@@ -149,18 +153,16 @@ export async function resendAnamnesisLink(formId: string): Promise<SimpleResult>
   const origin = getOrigin(headerList);
   const publicUrl = `${origin}/ficha/${form.public_token}`;
 
-  try {
-    await sendAnamnesisInvite({
-      to: client.email,
-      clientName: client.full_name,
-      designerName: profile.fullName ?? 'sua designer',
-      formUrl: publicUrl,
-    });
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Erro ao enviar email.',
-    };
+  console.log('[Action] resendAnamnesisLink → reenviando para:', client.email);
+  const result = await sendAnamnesisInvite({
+    to: client.email,
+    clientName: client.full_name,
+    designerName: profile.fullName ?? 'sua designer',
+    formUrl: publicUrl,
+  });
+  if (!result.success) {
+    console.error('[Action] resendAnamnesisLink → falha:', result.error);
+    return { success: false, error: result.error };
   }
 
   return { success: true };
@@ -313,31 +315,29 @@ export async function submitAnamnesisForm(input: SubmitInput): Promise<SubmitRes
     }
   }
 
-  // Emails (não bloqueia se falhar)
-  try {
-    if (client?.email) {
-      await sendAnamnesisCompletedClient({
-        to: client.email,
-        clientName: client.full_name,
-        pdfUrl: pdfUrl ?? undefined,
-        designerName: profile?.full_name ?? 'sua designer',
-      });
-    }
-    if (profile?.email) {
-      const criticalAnswers = collectCriticalAnswers(template?.fields, input.answers);
-      const headerList2 = await headers();
-      const origin = getOrigin(headerList2);
-      await sendAnamnesisCompletedDesigner({
-        to: profile.email,
-        clientName: client?.full_name ?? 'Cliente',
-        designerName: profile.full_name ?? 'Designer',
-        criticalAnswers,
-        pdfUrl: pdfUrl ?? undefined,
-        clientProfileUrl: `${origin}/dashboard/clientes/${form.client_id}`,
-      });
-    }
-  } catch {
-    // ignore email failures
+  // Emails (não bloqueia se falhar — só loga)
+  if (client?.email) {
+    const r = await sendAnamnesisCompletedClient({
+      to: client.email,
+      clientName: client.full_name,
+      pdfUrl: pdfUrl ?? undefined,
+      designerName: profile?.full_name ?? 'sua designer',
+    });
+    if (!r.success) console.error('[Action] submit → email cliente falhou:', r.error);
+  }
+  if (profile?.email) {
+    const criticalAnswers = collectCriticalAnswers(template?.fields, input.answers);
+    const headerList2 = await headers();
+    const origin = getOrigin(headerList2);
+    const r = await sendAnamnesisCompletedDesigner({
+      to: profile.email,
+      clientName: client?.full_name ?? 'Cliente',
+      designerName: profile.full_name ?? 'Designer',
+      criticalAnswers,
+      pdfUrl: pdfUrl ?? undefined,
+      clientProfileUrl: `${origin}/dashboard/clientes/${form.client_id}`,
+    });
+    if (!r.success) console.error('[Action] submit → email designer falhou:', r.error);
   }
 
   revalidatePath(`/dashboard/clientes/${form.client_id}`);
