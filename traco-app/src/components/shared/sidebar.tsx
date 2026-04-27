@@ -15,7 +15,6 @@ import { usePathname } from 'next/navigation';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { signOut } from '@/server/actions/auth';
 
@@ -63,11 +62,17 @@ export function Sidebar({ profile, onNavigate }: SidebarProps) {
   const displayName = profile.fullName?.trim() || profile.email;
 
   return (
-    <div className="flex h-full flex-col bg-white p-4">
-      <div className="mb-3 px-2">
-        <span className="text-2xl font-bold tracking-tight text-slate-900">Traço</span>
+    <div className="bg-ink scrollbar-dark flex h-full flex-col p-6">
+      <div className="mb-8 flex flex-col">
+        <span className="font-serif text-3xl font-light tracking-wide text-[var(--gold)]">
+          Traço
+        </span>
+        <span className="mt-1 text-[10px] font-light uppercase tracking-[0.3em] text-white/60">
+          by Master Brow
+        </span>
+        <div className="mt-6 h-px w-12 bg-[var(--gold)]/60" />
       </div>
-      <Separator className="mb-4" />
+
       <nav className="flex flex-col gap-1">
         {NAV.map((item) => {
           const active = isActive(pathname, item.href);
@@ -79,29 +84,31 @@ export function Sidebar({ profile, onNavigate }: SidebarProps) {
               onClick={onNavigate}
               aria-current={active ? 'page' : undefined}
               className={cn(
-                'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
+                'group/nav-item relative flex items-center gap-3 rounded-r-md px-4 py-3 text-sm uppercase tracking-[0.1em] transition-colors',
                 active
-                  ? 'bg-slate-100 font-medium text-slate-900'
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
+                  ? 'border-l-2 border-[var(--gold)] bg-[var(--gold)]/10 font-medium text-[var(--gold)]'
+                  : 'border-l-2 border-transparent text-white/70 hover:bg-white/5 hover:text-[var(--gold)]',
               )}
             >
-              <Icon className="size-4" />
+              <Icon className="size-[18px] shrink-0" strokeWidth={1.5} />
               <span>{item.label}</span>
             </Link>
           );
         })}
       </nav>
 
-      <div className="mt-auto">
-        <Separator className="mb-4" />
-        <div className="flex items-center gap-3 px-2 py-1">
-          <Avatar className="size-9">
+      <div className="mt-auto pt-6">
+        <div className="mb-4 h-px w-full bg-[var(--gold)]/20" />
+        <div className="flex items-center gap-3">
+          <Avatar className="size-10 border-2 border-[var(--gold)]/40">
             {profile.avatarUrl ? <AvatarImage src={profile.avatarUrl} alt={displayName} /> : null}
-            <AvatarFallback>{initials}</AvatarFallback>
+            <AvatarFallback className="bg-[var(--gold)]/15 text-[var(--gold)] text-xs font-medium">
+              {initials}
+            </AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-slate-900">{displayName}</p>
-            <p className="truncate text-xs text-slate-500">{profile.email}</p>
+            <p className="truncate text-sm font-medium text-white">{displayName}</p>
+            <p className="truncate text-xs text-white/50">{profile.email}</p>
           </div>
           <form action={signOut}>
             <Button
@@ -109,9 +116,9 @@ export function Sidebar({ profile, onNavigate }: SidebarProps) {
               variant="ghost"
               size="icon"
               aria-label="Sair"
-              className="size-8 text-slate-500 hover:text-slate-900"
+              className="size-9 text-[var(--gold)] hover:bg-[var(--gold)]/10 hover:text-[var(--gold)]"
             >
-              <LogOut className="size-4" />
+              <LogOut className="size-4" strokeWidth={1.5} />
             </Button>
           </form>
         </div>

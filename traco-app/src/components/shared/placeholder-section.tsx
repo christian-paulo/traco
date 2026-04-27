@@ -1,3 +1,5 @@
+import { Sparkles } from 'lucide-react';
+
 import { Card, CardContent } from '@/components/ui/card';
 
 type PlaceholderSectionProps = {
@@ -7,14 +9,21 @@ type PlaceholderSectionProps = {
 
 export function PlaceholderSection({ title, description }: PlaceholderSectionProps) {
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">{title}</h1>
-        <p className="text-sm text-slate-500">{description}</p>
-      </div>
-      <Card>
-        <CardContent className="py-12 text-center text-sm text-slate-500">
-          Em construção. Disponível em breve.
+    <div className="flex flex-col gap-10">
+      <header className="flex flex-col gap-2">
+        <div className="h-px w-8 bg-[var(--gold)]" />
+        <h1 className="font-serif text-4xl font-medium tracking-tight text-foreground">{title}</h1>
+        <p className="text-xs font-medium uppercase tracking-[0.3em] text-muted-foreground">
+          {description}
+        </p>
+      </header>
+
+      <Card variant="premium" className="bg-cream border-0 ring-1 ring-[var(--gold)]/15 py-12">
+        <CardContent className="flex flex-col items-center justify-center gap-4 px-6 text-center">
+          <Sparkles className="size-8 text-[var(--gold)]" strokeWidth={1.25} />
+          <p className="font-serif text-xl italic text-muted-foreground">
+            Em construção. Disponível em breve.
+          </p>
         </CardContent>
       </Card>
     </div>

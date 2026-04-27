@@ -51,13 +51,15 @@ export function LoginForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-5">
         <FormField
           control={form.control}
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                Email
+              </FormLabel>
               <FormControl>
                 <Input
                   type="email"
@@ -65,6 +67,7 @@ export function LoginForm() {
                   autoComplete="email"
                   placeholder="voce@exemplo.com"
                   disabled={isPending}
+                  className="h-11 border-[var(--gold)]/30 bg-card focus-visible:border-[var(--gold)] focus-visible:ring-[var(--gold)]/30"
                   {...field}
                 />
               </FormControl>
@@ -72,7 +75,7 @@ export function LoginForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" className="h-11 w-full" disabled={isPending}>
+        <Button type="submit" variant="premium" size="xl" className="w-full" disabled={isPending}>
           {isPending ? (
             <>
               <Loader2 className="size-4 animate-spin" />

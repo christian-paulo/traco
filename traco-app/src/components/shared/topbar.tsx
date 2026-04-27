@@ -25,18 +25,27 @@ export function Topbar({ profile }: TopbarProps) {
   const displayName = profile.fullName?.trim() || profile.email;
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4 lg:hidden">
+    <header className="bg-ink sticky top-0 z-30 flex h-14 items-center justify-between border-b border-[var(--gold)]/20 px-4 lg:hidden">
       <SheetTrigger
         render={
-          <Button variant="ghost" size="icon" aria-label="Abrir menu" className="size-9">
-            <Menu className="size-5" />
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Abrir menu"
+            className="size-9 text-white hover:bg-white/10 hover:text-[var(--gold)]"
+          >
+            <Menu className="size-5" strokeWidth={1.5} />
           </Button>
         }
       />
-      <span className="text-lg font-bold tracking-tight text-slate-900">Traço</span>
-      <Avatar className="size-8">
+      <span className="font-serif text-2xl font-light tracking-wide text-[var(--gold)]">
+        Traço
+      </span>
+      <Avatar className="size-8 border border-[var(--gold)]/40">
         {profile.avatarUrl ? <AvatarImage src={profile.avatarUrl} alt={displayName} /> : null}
-        <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+        <AvatarFallback className="bg-[var(--gold)]/15 text-[var(--gold)] text-[10px] font-medium">
+          {initials}
+        </AvatarFallback>
       </Avatar>
     </header>
   );
