@@ -1,21 +1,30 @@
 import { AlertCircle, CalendarCheck, TrendingUp, Users, type LucideIcon } from 'lucide-react';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatCurrency, getFirstName } from '@/lib/format';
 import { getDashboardStats } from '@/lib/queries/dashboard';
 import { getCurrentProfile } from '@/lib/queries/profile';
+import { cn } from '@/lib/utils';
 
 type StatCardProps = {
   label: string;
   icon: LucideIcon;
   value: string;
   prefix?: string;
+  href?: string;
 };
 
-function StatCard({ label, icon: Icon, value, prefix }: StatCardProps) {
-  return (
-    <Card variant="premium" className="bg-card gap-3 border-0 ring-1 ring-[var(--border)] py-6">
+function StatCard({ label, icon: Icon, value, prefix, href }: StatCardProps) {
+  const card = (
+    <Card
+      variant="premium"
+      className={cn(
+        'bg-card gap-3 border-0 ring-1 ring-[var(--border)] py-6 transition-all',
+        href && 'cursor-pointer hover:ring-[var(--gold)]/50',
+      )}
+    >
       <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 px-6 pb-0">
         <span className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
           {label}
@@ -36,6 +45,15 @@ function StatCard({ label, icon: Icon, value, prefix }: StatCardProps) {
       </CardContent>
     </Card>
   );
+
+  if (href) {
+    return (
+      <Link href={href} className="block">
+        {card}
+      </Link>
+    );
+  }
+  return card;
 }
 
 function SectionHeader({ title }: { title: string }) {
@@ -81,6 +99,7 @@ export default async function DashboardPage() {
           label="Clientes cadastradas"
           icon={Users}
           value={stats.totalClients.toLocaleString('pt-BR')}
+          href="/dashboard/clientes"
         />
         <StatCard
           label="Atendimentos do mês"

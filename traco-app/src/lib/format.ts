@@ -30,3 +30,34 @@ export function getFirstName(fullName: string): string {
   if (!trimmed) return '';
   return trimmed.split(/\s+/)[0];
 }
+
+export function getInitials(fullName: string | null, fallback = '?'): string {
+  const source = (fullName ?? '').trim();
+  if (!source) return fallback;
+  const parts = source.split(/\s+/).filter(Boolean);
+  const first = parts[0]?.[0] ?? '';
+  const last = parts.length > 1 ? parts[parts.length - 1][0] : '';
+  return ((first + last).toUpperCase() || source[0]?.toUpperCase()) ?? fallback;
+}
+
+export function formatRelativeDate(date: Date | string | null | undefined): string {
+  if (!date) return '—';
+  const value = typeof date === 'string' ? new Date(date) : date;
+  if (Number.isNaN(value.getTime())) return '—';
+  const diffMs = Date.now() - value.getTime();
+  const days = Math.floor(diffMs / 86_400_000);
+  if (days < 0) return formatDate(value);
+  if (days === 0) return 'hoje';
+  if (days === 1) return 'ontem';
+  if (days < 7) return `há ${days} dias`;
+  if (days < 30) {
+    const weeks = Math.floor(days / 7);
+    return weeks === 1 ? 'há 1 semana' : `há ${weeks} semanas`;
+  }
+  if (days < 365) {
+    const months = Math.floor(days / 30);
+    return months === 1 ? 'há 1 mês' : `há ${months} meses`;
+  }
+  const years = Math.floor(days / 365);
+  return years === 1 ? 'há 1 ano' : `há ${years} anos`;
+}
