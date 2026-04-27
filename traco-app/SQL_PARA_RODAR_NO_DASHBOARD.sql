@@ -142,7 +142,7 @@ create index idx_photos_client_id on public.photos(client_id);
 -- Funções helper
 -- =====================================================================
 
-create or replace function auth.tenant_id()
+CREATE OR REPLACE FUNCTION public.tenant_id()
 returns uuid
 language sql
 stable
@@ -152,7 +152,7 @@ as $$
   select tenant_id from public.profiles where id = auth.uid()
 $$;
 
-grant execute on function auth.tenant_id() to anon, authenticated, service_role;
+grant execute on function public.tenant_id() to anon, authenticated, service_role;
 
 create or replace function public.set_updated_at()
 returns trigger
@@ -312,7 +312,7 @@ alter table public.photos enable row level security;
 
 -- tenants: apenas leitura do próprio tenant
 create policy tenants_select on public.tenants
-  for select to authenticated using (id = auth.tenant_id());
+  for select to authenticated using (id = public.tenant_id());
 
 -- profiles: usuário só vê e edita o próprio
 create policy profiles_select on public.profiles
@@ -322,63 +322,63 @@ create policy profiles_update on public.profiles
 
 -- procedures
 create policy procedures_select on public.procedures
-  for select to authenticated using (tenant_id = auth.tenant_id());
+  for select to authenticated using (tenant_id = public.tenant_id());
 create policy procedures_insert on public.procedures
-  for insert to authenticated with check (tenant_id = auth.tenant_id());
+  for insert to authenticated with check (tenant_id = public.tenant_id());
 create policy procedures_update on public.procedures
-  for update to authenticated using (tenant_id = auth.tenant_id()) with check (tenant_id = auth.tenant_id());
+  for update to authenticated using (tenant_id = public.tenant_id()) with check (tenant_id = public.tenant_id());
 create policy procedures_delete on public.procedures
-  for delete to authenticated using (tenant_id = auth.tenant_id());
+  for delete to authenticated using (tenant_id = public.tenant_id());
 
 -- clients
 create policy clients_select on public.clients
-  for select to authenticated using (tenant_id = auth.tenant_id());
+  for select to authenticated using (tenant_id = public.tenant_id());
 create policy clients_insert on public.clients
-  for insert to authenticated with check (tenant_id = auth.tenant_id());
+  for insert to authenticated with check (tenant_id = public.tenant_id());
 create policy clients_update on public.clients
-  for update to authenticated using (tenant_id = auth.tenant_id()) with check (tenant_id = auth.tenant_id());
+  for update to authenticated using (tenant_id = public.tenant_id()) with check (tenant_id = public.tenant_id());
 create policy clients_delete on public.clients
-  for delete to authenticated using (tenant_id = auth.tenant_id());
+  for delete to authenticated using (tenant_id = public.tenant_id());
 
 -- appointments
 create policy appointments_select on public.appointments
-  for select to authenticated using (tenant_id = auth.tenant_id());
+  for select to authenticated using (tenant_id = public.tenant_id());
 create policy appointments_insert on public.appointments
-  for insert to authenticated with check (tenant_id = auth.tenant_id());
+  for insert to authenticated with check (tenant_id = public.tenant_id());
 create policy appointments_update on public.appointments
-  for update to authenticated using (tenant_id = auth.tenant_id()) with check (tenant_id = auth.tenant_id());
+  for update to authenticated using (tenant_id = public.tenant_id()) with check (tenant_id = public.tenant_id());
 create policy appointments_delete on public.appointments
-  for delete to authenticated using (tenant_id = auth.tenant_id());
+  for delete to authenticated using (tenant_id = public.tenant_id());
 
 -- appointment_followups
 create policy followups_select on public.appointment_followups
-  for select to authenticated using (tenant_id = auth.tenant_id());
+  for select to authenticated using (tenant_id = public.tenant_id());
 create policy followups_insert on public.appointment_followups
-  for insert to authenticated with check (tenant_id = auth.tenant_id());
+  for insert to authenticated with check (tenant_id = public.tenant_id());
 create policy followups_update on public.appointment_followups
-  for update to authenticated using (tenant_id = auth.tenant_id()) with check (tenant_id = auth.tenant_id());
+  for update to authenticated using (tenant_id = public.tenant_id()) with check (tenant_id = public.tenant_id());
 create policy followups_delete on public.appointment_followups
-  for delete to authenticated using (tenant_id = auth.tenant_id());
+  for delete to authenticated using (tenant_id = public.tenant_id());
 
 -- anamnesis_templates
 create policy templates_select on public.anamnesis_templates
-  for select to authenticated using (tenant_id = auth.tenant_id());
+  for select to authenticated using (tenant_id = public.tenant_id());
 create policy templates_insert on public.anamnesis_templates
-  for insert to authenticated with check (tenant_id = auth.tenant_id());
+  for insert to authenticated with check (tenant_id = public.tenant_id());
 create policy templates_update on public.anamnesis_templates
-  for update to authenticated using (tenant_id = auth.tenant_id()) with check (tenant_id = auth.tenant_id());
+  for update to authenticated using (tenant_id = public.tenant_id()) with check (tenant_id = public.tenant_id());
 create policy templates_delete on public.anamnesis_templates
-  for delete to authenticated using (tenant_id = auth.tenant_id());
+  for delete to authenticated using (tenant_id = public.tenant_id());
 
 -- anamnesis_forms (auth + público via public_token)
 create policy forms_select_auth on public.anamnesis_forms
-  for select to authenticated using (tenant_id = auth.tenant_id());
+  for select to authenticated using (tenant_id = public.tenant_id());
 create policy forms_insert_auth on public.anamnesis_forms
-  for insert to authenticated with check (tenant_id = auth.tenant_id());
+  for insert to authenticated with check (tenant_id = public.tenant_id());
 create policy forms_update_auth on public.anamnesis_forms
-  for update to authenticated using (tenant_id = auth.tenant_id()) with check (tenant_id = auth.tenant_id());
+  for update to authenticated using (tenant_id = public.tenant_id()) with check (tenant_id = public.tenant_id());
 create policy forms_delete_auth on public.anamnesis_forms
-  for delete to authenticated using (tenant_id = auth.tenant_id());
+  for delete to authenticated using (tenant_id = public.tenant_id());
 
 create policy forms_select_public on public.anamnesis_forms
   for select to anon
@@ -390,13 +390,13 @@ create policy forms_update_public on public.anamnesis_forms
 
 -- photos
 create policy photos_select on public.photos
-  for select to authenticated using (tenant_id = auth.tenant_id());
+  for select to authenticated using (tenant_id = public.tenant_id());
 create policy photos_insert on public.photos
-  for insert to authenticated with check (tenant_id = auth.tenant_id());
+  for insert to authenticated with check (tenant_id = public.tenant_id());
 create policy photos_update on public.photos
-  for update to authenticated using (tenant_id = auth.tenant_id()) with check (tenant_id = auth.tenant_id());
+  for update to authenticated using (tenant_id = public.tenant_id()) with check (tenant_id = public.tenant_id());
 create policy photos_delete on public.photos
-  for delete to authenticated using (tenant_id = auth.tenant_id());
+  for delete to authenticated using (tenant_id = public.tenant_id());
 
 -- =====================================================================
 -- Storage buckets
@@ -410,26 +410,26 @@ on conflict (id) do nothing;
 
 create policy storage_photos_select on storage.objects
   for select to authenticated
-  using (bucket_id = 'photos' and (storage.foldername(name))[1] = auth.tenant_id()::text);
+  using (bucket_id = 'photos' and (storage.foldername(name))[1] = public.tenant_id()::text);
 create policy storage_photos_insert on storage.objects
   for insert to authenticated
-  with check (bucket_id = 'photos' and (storage.foldername(name))[1] = auth.tenant_id()::text);
+  with check (bucket_id = 'photos' and (storage.foldername(name))[1] = public.tenant_id()::text);
 create policy storage_photos_update on storage.objects
   for update to authenticated
-  using (bucket_id = 'photos' and (storage.foldername(name))[1] = auth.tenant_id()::text);
+  using (bucket_id = 'photos' and (storage.foldername(name))[1] = public.tenant_id()::text);
 create policy storage_photos_delete on storage.objects
   for delete to authenticated
-  using (bucket_id = 'photos' and (storage.foldername(name))[1] = auth.tenant_id()::text);
+  using (bucket_id = 'photos' and (storage.foldername(name))[1] = public.tenant_id()::text);
 
 create policy storage_pdfs_select on storage.objects
   for select to authenticated
-  using (bucket_id = 'anamnesis-pdfs' and (storage.foldername(name))[1] = auth.tenant_id()::text);
+  using (bucket_id = 'anamnesis-pdfs' and (storage.foldername(name))[1] = public.tenant_id()::text);
 create policy storage_pdfs_insert on storage.objects
   for insert to authenticated
-  with check (bucket_id = 'anamnesis-pdfs' and (storage.foldername(name))[1] = auth.tenant_id()::text);
+  with check (bucket_id = 'anamnesis-pdfs' and (storage.foldername(name))[1] = public.tenant_id()::text);
 create policy storage_pdfs_update on storage.objects
   for update to authenticated
-  using (bucket_id = 'anamnesis-pdfs' and (storage.foldername(name))[1] = auth.tenant_id()::text);
+  using (bucket_id = 'anamnesis-pdfs' and (storage.foldername(name))[1] = public.tenant_id()::text);
 create policy storage_pdfs_delete on storage.objects
   for delete to authenticated
-  using (bucket_id = 'anamnesis-pdfs' and (storage.foldername(name))[1] = auth.tenant_id()::text);
+  using (bucket_id = 'anamnesis-pdfs' and (storage.foldername(name))[1] = public.tenant_id()::text);
