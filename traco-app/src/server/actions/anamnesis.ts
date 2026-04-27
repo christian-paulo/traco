@@ -18,7 +18,10 @@ import type { Json } from '@/types/database';
 
 type SimpleResult = { success: true } | { success: false; error: string };
 type CreateResult =
-  | { success: true; data: { id: string; public_token: string; public_url: string } }
+  | {
+      success: true;
+      data: { id: string; public_token: string; public_url: string; emailSent: boolean };
+    }
   | { success: false; error: string };
 type SubmitResult = { success: true; data: { id: string } } | { success: false; error: string };
 
@@ -92,6 +95,7 @@ export async function createAnamnesisLink(clientId: string): Promise<CreateResul
   const origin = getOrigin(headerList);
   const publicUrl = `${origin}/ficha/${form.public_token}`;
 
+  let emailSent = false;
   if (client.email) {
     try {
       await sendAnamnesisInvite({
@@ -100,13 +104,22 @@ export async function createAnamnesisLink(clientId: string): Promise<CreateResul
         designerName: profile.fullName ?? 'sua designer',
         formUrl: publicUrl,
       });
+      emailSent = true;
     } catch {
       // não bloqueia — o link já foi criado e pode ser copiado manualmente
     }
   }
 
   revalidatePath(`/dashboard/clientes/${client.id}`);
-  return { success: true, data: { id: form.id, public_token: form.public_token, public_url: publicUrl } };
+  return {
+    success: true,
+    data: {
+      id: form.id,
+      public_token: form.public_token,
+      public_url: publicUrl,
+      emailSent,
+    },
+  };
 }
 
 export async function resendAnamnesisLink(formId: string): Promise<SimpleResult> {

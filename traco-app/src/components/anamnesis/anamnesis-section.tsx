@@ -72,18 +72,21 @@ export function AnamnesisSection({ client, forms }: Props) {
     }
   }, []);
 
-  if (forms.length === 0) {
-    return (
-      <>
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-            0 fichas
-          </p>
-          <Button variant="outline-gold" onClick={() => setSendOpen(true)}>
-            <Send className="size-4" />
-            Enviar nova ficha
-          </Button>
-        </div>
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+          {forms.length === 0
+            ? '0 fichas'
+            : `${forms.length} ${forms.length === 1 ? 'ficha' : 'fichas'}`}
+        </p>
+        <Button variant="outline-gold" onClick={() => setSendOpen(true)}>
+          <Send className="size-4" />
+          Enviar nova ficha
+        </Button>
+      </div>
+
+      {forms.length === 0 ? (
         <Card variant="premium" className="bg-card border-0 ring-1 ring-[var(--border)] py-12">
           <CardContent className="flex flex-col items-center gap-4 text-center">
             <div className="flex size-16 items-center justify-center rounded-full bg-[var(--gold)]/10">
@@ -98,28 +101,13 @@ export function AnamnesisSection({ client, forms }: Props) {
             </Button>
           </CardContent>
         </Card>
-        <SendAnamnesisDialog open={sendOpen} onOpenChange={setSendOpen} client={client} />
-      </>
-    );
-  }
-
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-          {forms.length} {forms.length === 1 ? 'ficha' : 'fichas'}
-        </p>
-        <Button variant="outline-gold" onClick={() => setSendOpen(true)}>
-          <Send className="size-4" />
-          Enviar nova ficha
-        </Button>
-      </div>
-
-      <div className="flex flex-col gap-3">
-        {forms.map((form) => (
-          <FormCard key={form.id} form={form} clientId={client.id} origin={origin} />
-        ))}
-      </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {forms.map((form) => (
+            <FormCard key={form.id} form={form} clientId={client.id} origin={origin} />
+          ))}
+        </div>
+      )}
 
       <SendAnamnesisDialog open={sendOpen} onOpenChange={setSendOpen} client={client} />
     </div>
