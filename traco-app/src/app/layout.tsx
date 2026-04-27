@@ -27,7 +27,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="pt-BR" className={`${playfair.variable} ${montserrat.variable} h-full antialiased`}>
+    <html
+      lang="pt-BR"
+      className={`${playfair.variable} ${montserrat.variable} h-full antialiased`}
+      suppressHydrationWarning
+    >
       <body className="bg-background text-foreground flex min-h-full flex-col font-sans">
         {children}
         <Toaster
