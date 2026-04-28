@@ -36,7 +36,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       className={`${playfair.variable} ${montserrat.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <body className="bg-background text-foreground flex min-h-full flex-col font-sans">
+      <body
+        className="bg-background text-foreground flex min-h-full flex-col font-sans"
+        suppressHydrationWarning
+      >
         {children}
         <Toaster
           richColors
