@@ -8,7 +8,9 @@ import { getPublicFichaByToken } from '@/lib/queries/anamnesis';
 import { FichaForm } from './ficha-form';
 
 export const metadata: Metadata = {
-  title: 'Ficha de anamnese | Traço',
+  title: 'Sua ficha de anamnese',
+  description: 'Preencha sua ficha antes do atendimento.',
+  robots: { index: false, follow: false },
 };
 
 type Params = Promise<{ token: string }>;

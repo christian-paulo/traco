@@ -247,6 +247,7 @@ export type Database = {
           email: string | null
           full_name: string
           id: string
+          last_recovery_email_sent_at: string | null
           notes: string | null
           phone: string
           skin_phototype: string | null
@@ -260,6 +261,7 @@ export type Database = {
           email?: string | null
           full_name: string
           id?: string
+          last_recovery_email_sent_at?: string | null
           notes?: string | null
           phone: string
           skin_phototype?: string | null
@@ -273,6 +275,7 @@ export type Database = {
           email?: string | null
           full_name?: string
           id?: string
+          last_recovery_email_sent_at?: string | null
           notes?: string | null
           phone?: string
           skin_phototype?: string | null
@@ -402,6 +405,7 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
+          phone: string | null
           tenant_id: string
           updated_at: string
         }
@@ -411,6 +415,7 @@ export type Database = {
           email: string
           full_name?: string | null
           id: string
+          phone?: string | null
           tenant_id: string
           updated_at?: string
         }
@@ -420,6 +425,7 @@ export type Database = {
           email?: string
           full_name?: string | null
           id?: string
+          phone?: string | null
           tenant_id?: string
           updated_at?: string
         }
@@ -435,22 +441,28 @@ export type Database = {
       }
       tenants: {
         Row: {
+          accent_color: string | null
           created_at: string
           id: string
           name: string
           updated_at: string
+          whatsapp_template: string | null
         }
         Insert: {
+          accent_color?: string | null
           created_at?: string
           id?: string
           name: string
           updated_at?: string
+          whatsapp_template?: string | null
         }
         Update: {
+          accent_color?: string | null
           created_at?: string
           id?: string
           name?: string
           updated_at?: string
+          whatsapp_template?: string | null
         }
         Relationships: []
       }

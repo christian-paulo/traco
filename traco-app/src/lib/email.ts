@@ -6,6 +6,7 @@ import type { ReactElement } from 'react';
 import AnamnesisCompletedClientEmail from '@/emails/anamnesis-completed-client';
 import AnamnesisCompletedDesignerEmail from '@/emails/anamnesis-completed-designer';
 import AnamnesisInviteEmail from '@/emails/anamnesis-invite';
+import RecoveryInviteEmail from '@/emails/recovery-invite';
 
 const apiKey = process.env.RESEND_API_KEY;
 const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
@@ -133,5 +134,29 @@ export async function sendAnamnesisCompletedDesigner(params: {
       }),
     },
     'anamnesis-completed-designer',
+  );
+}
+
+export async function sendRecoveryEmail(params: {
+  to: string;
+  clientName: string;
+  designerName: string;
+  lastProcedure: string;
+  daysOverdue: number;
+  whatsappUrl: string;
+}): Promise<EmailResult> {
+  return rawSend(
+    {
+      to: params.to,
+      subject: `${params.clientName.split(' ')[0]}, hora de renovar seu ${params.lastProcedure}`,
+      react: RecoveryInviteEmail({
+        clientName: params.clientName,
+        designerName: params.designerName,
+        lastProcedure: params.lastProcedure,
+        daysOverdue: params.daysOverdue,
+        whatsappUrl: params.whatsappUrl,
+      }),
+    },
+    'recovery-invite',
   );
 }

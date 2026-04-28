@@ -2,10 +2,12 @@ import { AlertCircle, CalendarCheck, TrendingUp, Users, type LucideIcon } from '
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
+import { OnboardingChecklist, type OnboardingStatus } from '@/components/onboarding/onboarding-checklist';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatCurrency, getFirstName } from '@/lib/format';
 import { getDashboardStats } from '@/lib/queries/dashboard';
 import { getCurrentProfile } from '@/lib/queries/profile';
+import { createClient } from '@/lib/supabase/server';
 import { cn } from '@/lib/utils';
 
 type StatCardProps = {
@@ -82,6 +84,34 @@ export default async function DashboardPage() {
   const firstName = getFirstName(profile.fullName ?? profile.email);
   const revenue = formatRevenue(stats.monthlyRevenue);
 
+  const supabase = await createClient();
+  const [
+    { data: profileRow },
+    { data: appointmentsHead },
+    { data: fichaHead },
+    { data: customProcedure },
+  ] = await Promise.all([
+    supabase.from('profiles').select('phone').eq('id', profile.id).maybeSingle(),
+    supabase.from('appointments').select('id').limit(1),
+    supabase.from('anamnesis_forms').select('id').limit(1),
+    supabase
+      .from('procedures')
+      .select('id, created_at, updated_at')
+      .order('updated_at', { ascending: false })
+      .limit(1),
+  ]);
+
+  const onboarding: OnboardingStatus = {
+    hasClient: stats.totalClients > 0,
+    hasProfilePhone: Boolean(profileRow?.phone),
+    hasCustomProcedure:
+      (customProcedure ?? []).some(
+        (p) => new Date(p.updated_at).getTime() - new Date(p.created_at).getTime() > 1500,
+      ),
+    hasAppointment: (appointmentsHead ?? []).length > 0,
+    hasFicha: (fichaHead ?? []).length > 0,
+  };
+
   return (
     <div className="flex flex-col gap-10">
       <header className="flex flex-col gap-2">
@@ -93,6 +123,8 @@ export default async function DashboardPage() {
           Aqui está o resumo do seu dia
         </p>
       </header>
+
+      <OnboardingChecklist status={onboarding} />
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
@@ -118,6 +150,7 @@ export default async function DashboardPage() {
           label="Clientes a recuperar"
           icon={AlertCircle}
           value={stats.clientsToRecover.toLocaleString('pt-BR')}
+          href="/dashboard/recuperar"
         />
       </section>
 

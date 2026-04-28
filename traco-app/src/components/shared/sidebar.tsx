@@ -1,8 +1,8 @@
 'use client';
 
 import {
-  AlertCircle,
   CalendarCheck,
+  Clock,
   LayoutDashboard,
   LogOut,
   Settings,
@@ -28,6 +28,7 @@ const NAV: NavItem[] = [
   { label: 'Início', href: '/dashboard', icon: LayoutDashboard },
   { label: 'Clientes', href: '/dashboard/clientes', icon: Users },
   { label: 'Atendimentos', href: '/dashboard/atendimentos', icon: CalendarCheck },
+  { label: 'Recuperar', href: '/dashboard/recuperar', icon: Clock },
   { label: 'Financeiro', href: '/dashboard/financeiro', icon: TrendingUp },
   { label: 'Configurações', href: '/dashboard/configuracoes', icon: Settings },
 ];

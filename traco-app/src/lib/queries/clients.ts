@@ -117,6 +117,94 @@ export async function getClientById(id: string): Promise<ClientDetail | null> {
   return { ...(data as ClientRow), recent_appointments: recent };
 }
 
+export type ClientToRecover = {
+  client_id: string;
+  full_name: string;
+  phone: string;
+  email: string | null;
+  last_appointment_date: string;
+  last_appointment_id: string;
+  last_procedure_id: string | null;
+  last_procedure_name: string | null;
+  last_procedure_color: string | null;
+  last_procedure_default_price: number;
+  return_due_date: string;
+  days_overdue: number;
+  last_recovery_email_sent_at: string | null;
+};
+
+export async function getClientsToRecover(): Promise<ClientToRecover[]> {
+  const supabase = await createClient();
+
+  const { data: appts } = await supabase
+    .from('appointments')
+    .select(
+      'id, client_id, performed_at, return_due_date, procedure_id, procedures(id, name, color, default_price)',
+    )
+    .order('performed_at', { ascending: false });
+
+  type ApptRow = {
+    id: string;
+    client_id: string;
+    performed_at: string;
+    return_due_date: string | null;
+    procedure_id: string | null;
+    procedures:
+      | { id: string; name: string; color: string; default_price: number }
+      | { id: string; name: string; color: string; default_price: number }[]
+      | null;
+  };
+
+  const seen = new Set<string>();
+  const overdue: ApptRow[] = [];
+  const todayIso = new Date().toISOString().slice(0, 10);
+
+  for (const raw of appts ?? []) {
+    const row = raw as unknown as ApptRow;
+    if (seen.has(row.client_id)) continue;
+    seen.add(row.client_id);
+    if (row.return_due_date && row.return_due_date < todayIso) overdue.push(row);
+  }
+
+  if (overdue.length === 0) return [];
+
+  const ids = overdue.map((r) => r.client_id);
+  const { data: clients } = await supabase
+    .from('clients')
+    .select('id, full_name, phone, email, last_recovery_email_sent_at')
+    .in('id', ids);
+  const clientMap = new Map((clients ?? []).map((c) => [c.id, c]));
+
+  const today = new Date(`${todayIso}T00:00:00Z`);
+  return overdue
+    .map((row) => {
+      const client = clientMap.get(row.client_id);
+      if (!client) return null;
+      const proc = Array.isArray(row.procedures)
+        ? row.procedures[0]
+        : (row.procedures ?? null);
+      const dueDate = new Date(`${row.return_due_date as string}T00:00:00Z`);
+      const days = Math.floor((today.getTime() - dueDate.getTime()) / 86_400_000);
+      return {
+        client_id: client.id,
+        full_name: client.full_name,
+        phone: client.phone,
+        email: client.email,
+        last_appointment_date: row.performed_at,
+        last_appointment_id: row.id,
+        last_procedure_id: row.procedure_id,
+        last_procedure_name: proc?.name ?? null,
+        last_procedure_color: proc?.color ?? null,
+        last_procedure_default_price: Number(proc?.default_price ?? 0),
+        return_due_date: row.return_due_date as string,
+        days_overdue: days,
+        last_recovery_email_sent_at: client.last_recovery_email_sent_at ?? null,
+      } satisfies ClientToRecover;
+    })
+    .filter((v): v is ClientToRecover => v !== null)
+    .sort((a, b) => b.days_overdue - a.days_overdue);
+}
+
 export async function listAllTags(): Promise<string[]> {
   const supabase = await createClient();
   const { data } = await supabase.from('clients').select('tags');

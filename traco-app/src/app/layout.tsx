@@ -21,8 +21,12 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: 'Traço',
-  description: 'Gestão para designers de brow.',
+  title: {
+    default: 'Traço — Sistema de gestão para designers de brow',
+    template: '%s | Traço',
+  },
+  description: 'O sistema interno do studio Master Brow Lamination.',
+  robots: { index: false, follow: false },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
