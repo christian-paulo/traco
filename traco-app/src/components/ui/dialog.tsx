@@ -31,9 +31,15 @@ function DialogOverlay({
     <DialogPrimitive.Backdrop
       data-slot="dialog-overlay"
       className={cn(
-        "fixed inset-0 isolate z-50 bg-black/70 backdrop-blur-md transition-opacity duration-200 ease-out data-[closed]:opacity-0 data-[closed]:pointer-events-none",
+        "fixed inset-0 z-40 transition-opacity duration-200 ease-out",
+        "data-[closed]:opacity-0 data-[closed]:pointer-events-none",
         className
       )}
+      style={{
+        backgroundColor: "rgba(0, 0, 0, 0.7)",
+        backdropFilter: "blur(8px)",
+        WebkitBackdropFilter: "blur(8px)",
+      }}
       {...props}
     />
   )
