@@ -187,3 +187,26 @@
     background: var(--gold);
   }
 }
+
+/* =====================================================================
+ * Backdrop dos modais
+ * --------------------------------------------------------------------
+ * O base-ui (@base-ui/react) v1.x renderiza um inert layer interno
+ * (role="presentation" data-base-ui-inert) DENTRO do portal do Dialog
+ * para capturar clicks fora do popup. Esse div tem position:fixed
+ * inset:0 mas SEM background. O componente <Dialog.Backdrop> que
+ * declaramos no JSX não chega ao DOM nessa versão (bug ou mudança
+ * silenciosa de API).
+ *
+ * Aqui estilizamos o inert layer existente — ele já está em z-index
+ * abaixo do popup, full viewport, controlado pelo open/close do dialog.
+ * ===================================================================== */
+[data-slot='dialog-portal'] > [data-base-ui-inert],
+[data-slot='alert-dialog-portal'] > [data-base-ui-inert],
+[data-slot='sheet-portal'] > [data-base-ui-inert] {
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: opacity 200ms ease-out;
+  z-index: 40;
+}
