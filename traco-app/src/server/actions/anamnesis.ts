@@ -399,3 +399,98 @@ function collectCriticalAnswers(
   }
   return critical;
 }
+
+type EditVersionInput = {
+  formId: string;
+  answers: Record<string, unknown>;
+  editReason: string;
+};
+
+type EditVersionResult =
+  | { success: true; data: { versionId: string; versionNumber: number } }
+  | { success: false; error: string };
+
+export async function editFormVersion(input: EditVersionInput): Promise<EditVersionResult> {
+  if (!input.formId) return { success: false, error: 'Formulário inválido.' };
+  const reason = input.editReason.trim();
+  if (reason.length < 3) {
+    return { success: false, error: 'Informe o motivo da edição.' };
+  }
+
+  const profile = await getCurrentProfile();
+  if (!profile) return { success: false, error: 'Sessão expirada.' };
+
+  const supabase = await createClient();
+
+  const { data: form, error: formError } = await supabase
+    .from('anamnesis_forms')
+    .select('id, tenant_id, client_id, edit_count')
+    .eq('id', input.formId)
+    .maybeSingle();
+  if (formError || !form) {
+    return { success: false, error: 'Ficha não encontrada.' };
+  }
+
+  // Maior versão atual
+  const { data: latest } = await supabase
+    .from('anamnesis_form_versions')
+    .select('version_number')
+    .eq('form_id', form.id)
+    .order('version_number', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const nextVersion = (latest?.version_number ?? 0) + 1;
+
+  const editedAt = new Date().toISOString();
+  const integrityHash = createHash('sha256')
+    .update(
+      JSON.stringify({
+        answers: input.answers,
+        edited_at: editedAt,
+        edited_by: profile.id,
+        edit_reason: reason,
+      }),
+    )
+    .digest('hex');
+
+  const { data: created, error: insertError } = await supabase
+    .from('anamnesis_form_versions')
+    .insert({
+      tenant_id: form.tenant_id,
+      form_id: form.id,
+      version_number: nextVersion,
+      is_original: false,
+      answers: input.answers as Json,
+      signature_png: null,
+      signed_at: null,
+      signer_ip: null,
+      edited_by: profile.id,
+      edit_reason: reason,
+      integrity_hash: integrityHash,
+    })
+    .select('id, version_number')
+    .single();
+
+  if (insertError || !created) {
+    return { success: false, error: insertError?.message ?? 'Erro ao salvar versão.' };
+  }
+
+  const { error: updateError } = await supabase
+    .from('anamnesis_forms')
+    .update({
+      current_version_id: created.id,
+      edit_count: (form.edit_count ?? 0) + 1,
+      answers: input.answers as Json, // mantém compat com queries legadas
+    })
+    .eq('id', form.id);
+
+  if (updateError) {
+    return { success: false, error: updateError.message };
+  }
+
+  revalidatePath(`/dashboard/clientes/${form.client_id}`);
+  return {
+    success: true,
+    data: { versionId: created.id, versionNumber: created.version_number },
+  };
+}

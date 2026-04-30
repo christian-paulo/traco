@@ -1,22 +1,29 @@
 'use client';
 
-import { CheckCircle2, FileText, ShieldAlert } from 'lucide-react';
+import { CheckCircle2, FileDown, FileText, History, Pencil } from 'lucide-react';
+import { useState } from 'react';
 
-import { Badge } from '@/components/ui/badge';
+import { AnamnesisVersionHistoryDialog } from '@/components/clients/anamnesis-version-history-dialog';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatDate } from '@/lib/format';
+import type { AnamnesisVersionRow } from '@/lib/queries/anamnesis';
+import type { AnamnesisAnswers, TemplateField } from '@/lib/anamnesis/template-types';
 
+import { EditFichaDialog } from '../edit-ficha-dialog';
 import type { FichaState } from '../atendimento-layout';
 
 type Props = {
   ficha: FichaState;
+  versions: AnamnesisVersionRow[];
+  pdfUrl: string | null;
 };
 
 type RawField = {
   type?: string;
-  key?: string;
+  id?: string;
   label?: string;
-  options?: Array<{ value: string; label: string }>;
+  options?: Array<{ value: string; label: string } | string>;
 };
 
 type RawSection = {
@@ -45,7 +52,7 @@ function isYes(v: unknown): boolean {
 }
 
 function renderAnswer(field: RawField, answers: Record<string, unknown>): string {
-  const key = field.key;
+  const key = field.id;
   if (!key) return '—';
   const value = answers[key];
   if (value === undefined || value === null || value === '') return '—';
@@ -65,7 +72,10 @@ function renderAnswer(field: RawField, answers: Record<string, unknown>): string
   }
 
   if (field.type === 'select' && Array.isArray(field.options)) {
-    const opt = field.options.find((o) => o.value === value);
+    const opt = field.options.find((o) =>
+      typeof o === 'string' ? o === value : o.value === value,
+    );
+    if (typeof opt === 'string') return opt;
     return opt?.label ?? String(value);
   }
 
@@ -91,7 +101,10 @@ function renderAnswer(field: RawField, answers: Record<string, unknown>): string
   return JSON.stringify(value);
 }
 
-export function TabFicha({ ficha }: Props) {
+export function TabFicha({ ficha, versions, pdfUrl }: Props) {
+  const [editOpen, setEditOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+
   if (!ficha.formId) {
     return (
       <Card variant="premium" className="bg-card border-0 ring-1 ring-[var(--border)] py-12">
@@ -139,17 +152,39 @@ export function TabFicha({ ficha }: Props) {
   }
   if (current) sections.push(current);
 
+  const sortedVersions = [...versions].sort((a, b) => b.version_number - a.version_number);
+  const currentVersion = sortedVersions[0] ?? null;
+  const versionNumber = currentVersion?.version_number ?? 1;
+  const isOriginal = currentVersion?.is_original ?? true;
+
   return (
     <div className="flex flex-col gap-4">
-      <Card variant="premium" className="bg-card border-0 ring-1 ring-emerald-200">
-        <CardContent className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
-          <div className="flex items-center gap-3">
-            <CheckCircle2 className="size-5 text-emerald-600" />
+      <Card variant="premium" className="bg-card border-0 ring-1 ring-[var(--gold)]/30">
+        <CardContent className="flex flex-col gap-3 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <CheckCircle2 className="size-5 shrink-0 text-emerald-600" />
             <div className="flex flex-col gap-0.5">
-              <p className="text-sm font-medium text-emerald-800">
-                Ficha assinada{' '}
-                {ficha.signedAt ? `em ${formatDate(ficha.signedAt, 'short')}` : ''}
+              <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                Versão atual: {versionNumber}
               </p>
+              {isOriginal ? (
+                <p className="text-sm font-medium text-foreground">
+                  Assinada{' '}
+                  {ficha.signedAt ? `em ${formatDate(ficha.signedAt, 'short')}` : ''}
+                </p>
+              ) : (
+                <p className="text-sm font-medium text-foreground">
+                  Editada em{' '}
+                  {currentVersion?.created_at
+                    ? formatDate(currentVersion.created_at, 'short')
+                    : '—'}
+                  {currentVersion?.edit_reason ? (
+                    <span className="font-normal text-muted-foreground">
+                      {' '}· {currentVersion.edit_reason}
+                    </span>
+                  ) : null}
+                </p>
+              )}
               {ficha.editCount > 0 ? (
                 <p className="text-xs text-muted-foreground">
                   {ficha.editCount}{' '}
@@ -158,13 +193,39 @@ export function TabFicha({ ficha }: Props) {
               ) : null}
             </div>
           </div>
-          <Badge
-            variant="outline"
-            className="border-cream-dark text-xs uppercase tracking-[0.14em] text-muted-foreground"
-          >
-            <ShieldAlert className="size-3" />
-            Apenas leitura
-          </Badge>
+
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9"
+              onClick={() => setHistoryOpen(true)}
+              disabled={versions.length === 0}
+            >
+              <History className="size-4" />
+              Histórico
+            </Button>
+            {pdfUrl ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-9"
+                onClick={() => window.open(pdfUrl, '_blank', 'noopener,noreferrer')}
+              >
+                <FileDown className="size-4" />
+                PDF
+              </Button>
+            ) : null}
+            <Button
+              variant="premium"
+              size="sm"
+              className="h-9"
+              onClick={() => setEditOpen(true)}
+            >
+              <Pencil className="size-4" />
+              Editar ficha
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -180,9 +241,9 @@ export function TabFicha({ ficha }: Props) {
             </p>
             <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {section.fields.map((field) => (
-                <div key={field.key} className="flex flex-col gap-0.5">
+                <div key={field.id} className="flex flex-col gap-0.5">
                   <dt className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
-                    {field.label ?? field.key}
+                    {field.label ?? field.id}
                   </dt>
                   <dd className="break-words text-sm text-foreground">
                     {renderAnswer(field, ficha.currentAnswers)}
@@ -193,6 +254,21 @@ export function TabFicha({ ficha }: Props) {
           </CardContent>
         </Card>
       ))}
+
+      <EditFichaDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        formId={ficha.formId}
+        templateFields={ficha.templateFields as unknown as TemplateField[]}
+        initialAnswers={ficha.currentAnswers as AnamnesisAnswers}
+      />
+
+      <AnamnesisVersionHistoryDialog
+        open={historyOpen}
+        onOpenChange={setHistoryOpen}
+        versions={versions}
+        pdfUrl={pdfUrl}
+      />
     </div>
   );
 }

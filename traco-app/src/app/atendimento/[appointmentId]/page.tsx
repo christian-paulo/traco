@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { AlertaInicialDialog } from '@/components/atendimento/alerta-inicial-dialog';
 import { AtendimentoLayout } from '@/components/atendimento/atendimento-layout';
 import { detectCriticalAlerts } from '@/lib/anamnesis/critical-answers';
+import { listAnamnesisVersions, type AnamnesisVersionRow } from '@/lib/queries/anamnesis';
 import {
   getAppointmentProcedure,
   listFavoriteProducts,
@@ -63,7 +64,7 @@ export default async function AtendimentoPage({ params }: { params: Params }) {
     supabase
       .from('anamnesis_forms')
       .select(
-        'id, status, signed_at, signature_png, signer_ip, integrity_hash, current_version_id, edit_count, answers, anamnesis_templates(name, fields), current_version:anamnesis_form_versions!current_version_id(answers)',
+        'id, status, signed_at, signature_png, signer_ip, integrity_hash, current_version_id, edit_count, answers, pdf_url, anamnesis_templates(name, fields), current_version:anamnesis_form_versions!current_version_id(answers)',
       )
       .eq('client_id', appointment.client_id)
       .eq('status', 'signed')
@@ -97,6 +98,16 @@ export default async function AtendimentoPage({ params }: { params: Params }) {
     }
     if (!currentVersionAnswers && anamnesisForm.answers) {
       currentVersionAnswers = anamnesisForm.answers as Record<string, unknown>;
+    }
+  }
+
+  // Carrega versões pra exibir histórico + cabeçalho da Tab Ficha
+  let fichaVersions: AnamnesisVersionRow[] = [];
+  if (anamnesisForm?.id) {
+    try {
+      fichaVersions = await listAnamnesisVersions(anamnesisForm.id);
+    } catch {
+      fichaVersions = [];
     }
   }
 
@@ -143,6 +154,8 @@ export default async function AtendimentoPage({ params }: { params: Params }) {
         editCount: anamnesisForm?.edit_count ?? 0,
         signedAt: anamnesisForm?.signed_at ?? null,
         templateFields,
+        versions: fichaVersions,
+        pdfUrl: anamnesisForm?.pdf_url ?? null,
       }}
       pastAppointments={(pastAppointments ?? []).map((a) => {
         const p = a.procedures as RawProc | RawProc[] | null;

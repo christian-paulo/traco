@@ -10,6 +10,7 @@ import type {
   FavoriteProductRow,
 } from '@/lib/queries/appointment-procedures';
 import type { CriticalAlert } from '@/lib/anamnesis/critical-answers';
+import type { AnamnesisVersionRow } from '@/lib/queries/anamnesis';
 import type { PhotoWithUrl } from '@/lib/queries/photos';
 import type { ProcedureRow } from '@/lib/queries/procedures';
 import type { NoteRow } from '@/lib/queries/professional-notes';
@@ -61,6 +62,8 @@ export type FichaState = {
   editCount: number;
   signedAt: string | null;
   templateFields: Array<Record<string, unknown>>;
+  versions: AnamnesisVersionRow[];
+  pdfUrl: string | null;
 };
 
 export type PastAppointment = {
@@ -228,7 +231,13 @@ export function AtendimentoLayout(props: Props) {
             pastAppointments={props.pastAppointments}
           />
         ) : null}
-        {activeTab === 'ficha' ? <TabFicha ficha={props.ficha} /> : null}
+        {activeTab === 'ficha' ? (
+          <TabFicha
+            ficha={props.ficha}
+            versions={props.ficha.versions}
+            pdfUrl={props.ficha.pdfUrl}
+          />
+        ) : null}
         {activeTab === 'historico' ? (
           <TabHistorico pastAppointments={props.pastAppointments} />
         ) : null}
