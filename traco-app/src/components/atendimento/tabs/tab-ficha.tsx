@@ -22,11 +22,17 @@ type RawField = {
 type RawSection = {
   type: 'section';
   id?: string;
+  label?: string;
   title?: string;
+  subtitle?: string;
 };
 
 function isSection(field: Record<string, unknown>): field is RawSection {
   return field.type === 'section';
+}
+
+function sectionTitle(s: RawSection): string {
+  return s.label ?? s.title ?? 'Seção';
 }
 
 function isYes(v: unknown): boolean {
@@ -94,10 +100,25 @@ export function TabFicha({ ficha }: Props) {
             <FileText className="size-8 text-[var(--gold)]" strokeWidth={1.25} />
           </div>
           <p className="font-serif text-lg italic text-muted-foreground">
-            Esta cliente ainda não tem ficha assinada.
+            Esta cliente ainda não preencheu ficha de anamnese.
           </p>
           <p className="max-w-sm text-sm text-muted-foreground">
-            Envie uma ficha pelo perfil da cliente antes de prosseguir com o procedimento.
+            Volte ao perfil da cliente e envie o link da ficha antes de prosseguir.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (ficha.templateFields.length === 0) {
+    return (
+      <Card variant="premium" className="bg-card border-0 ring-1 ring-amber-200 py-8">
+        <CardContent className="flex flex-col items-center gap-3 text-center">
+          <p className="font-serif text-base italic text-amber-800">
+            O template da ficha está sem campos configurados.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Verifique em Configurações se o template ativo tem perguntas.
           </p>
         </CardContent>
       </Card>
@@ -110,7 +131,7 @@ export function TabFicha({ ficha }: Props) {
   for (const f of ficha.templateFields) {
     if (isSection(f)) {
       if (current) sections.push(current);
-      current = { title: f.title ?? 'Seção', fields: [] };
+      current = { title: sectionTitle(f), fields: [] };
     } else {
       if (!current) current = { title: 'Identificação', fields: [] };
       current.fields.push(f as RawField);

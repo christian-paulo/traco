@@ -17,18 +17,10 @@ import {
 } from '@/components/ui/dialog';
 import type { CriticalAlert } from '@/lib/anamnesis/critical-answers';
 import { formatDate } from '@/lib/format';
-import type { ReactionRow, ReactionType } from '@/lib/queries/reactions';
+import type { ReactionRow } from '@/lib/queries/reactions';
+import { reactionTypeLabel } from '@/lib/reactions/labels';
 import { cn } from '@/lib/utils';
 import { updateReactionStatus } from '@/server/actions/reactions';
-
-const TYPE_LABEL: Record<ReactionType, string> = {
-  allergy: 'Alergia',
-  irritation: 'Irritação',
-  hypersensitivity: 'Hipersensibilidade',
-  positive_excellent: 'Resultado excelente',
-  below_expected: 'Abaixo do esperado',
-  other: 'Outro',
-};
 
 type Props = {
   appointmentId: string;
@@ -148,7 +140,7 @@ export function AlertaInicialDialog({
                           variant="outline"
                           className="border-red-300 bg-red-50 text-red-800"
                         >
-                          {TYPE_LABEL[r.reaction_type]}
+                          {reactionTypeLabel(r.reaction_type)}
                         </Badge>
                         <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
                           Registrada em {formatDate(r.recorded_at, 'short')}

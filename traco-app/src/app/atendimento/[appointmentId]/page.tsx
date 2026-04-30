@@ -63,7 +63,7 @@ export default async function AtendimentoPage({ params }: { params: Params }) {
     supabase
       .from('anamnesis_forms')
       .select(
-        'id, status, signed_at, signature_png, signer_ip, integrity_hash, current_version_id, edit_count, answers, anamnesis_templates(name, fields)',
+        'id, status, signed_at, signature_png, signer_ip, integrity_hash, current_version_id, edit_count, answers, anamnesis_templates(name, fields), current_version:anamnesis_form_versions!current_version_id(answers)',
       )
       .eq('client_id', appointment.client_id)
       .eq('status', 'signed')
@@ -88,19 +88,15 @@ export default async function AtendimentoPage({ params }: { params: Params }) {
     if (tpl?.fields && Array.isArray(tpl.fields)) {
       templateFields = tpl.fields as Array<Record<string, unknown>>;
     }
-    if (anamnesisForm.current_version_id) {
-      const { data: ver } = await supabase
-        .from('anamnesis_form_versions')
-        .select('answers')
-        .eq('id', anamnesisForm.current_version_id)
-        .maybeSingle();
-      currentVersionAnswers = (ver?.answers ?? null) as Record<string, unknown> | null;
+    type RawVersion = { answers?: Record<string, unknown> | null };
+    const verRaw = (anamnesisForm as { current_version?: RawVersion | RawVersion[] | null })
+      .current_version;
+    const ver = Array.isArray(verRaw) ? verRaw[0] : verRaw;
+    if (ver?.answers && typeof ver.answers === 'object') {
+      currentVersionAnswers = ver.answers as Record<string, unknown>;
     }
-    if (!currentVersionAnswers) {
-      currentVersionAnswers = (anamnesisForm.answers ?? null) as Record<
-        string,
-        unknown
-      > | null;
+    if (!currentVersionAnswers && anamnesisForm.answers) {
+      currentVersionAnswers = anamnesisForm.answers as Record<string, unknown>;
     }
   }
 

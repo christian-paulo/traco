@@ -25,6 +25,7 @@ type Props = {
   date: string; // YYYY-MM-DD
   appointments: AgendaAppointment[];
   workingHours: { start_time: string; end_time: string; is_active: boolean } | null;
+  onEmptySlotClick?: (localIso: string) => void;
 };
 
 const PX_PER_MIN = 1.2;
@@ -42,12 +43,32 @@ function minToLabel(min: number): string {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
-export function AgendaDayView({ date, appointments, workingHours }: Props) {
-  void date;
+function pad(n: number) {
+  return String(n).padStart(2, '0');
+}
+
+export function AgendaDayView({ date, appointments, workingHours, onEmptySlotClick }: Props) {
   const dayStartMin = DAY_START_HOUR * 60;
   const dayEndMin = DAY_END_HOUR * 60;
   const totalMin = dayEndMin - dayStartMin;
   const totalHeight = totalMin * PX_PER_MIN;
+
+  function handleGridClick(e: React.MouseEvent<HTMLDivElement>) {
+    if (!onEmptySlotClick) return;
+    // Ignora clicks que vieram de elementos interativos (links, botões, cards)
+    const target = e.target as HTMLElement;
+    if (target.closest('a, button')) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    const minutesFromDayStart = y / PX_PER_MIN;
+    const totalMinutes = Math.max(0, Math.round(minutesFromDayStart / 15) * 15);
+    const minuteOfDay = dayStartMin + totalMinutes;
+    if (minuteOfDay >= dayEndMin) return;
+    const h = Math.floor(minuteOfDay / 60);
+    const m = minuteOfDay % 60;
+    onEmptySlotClick(`${date}T${pad(h)}:${pad(m)}`);
+  }
 
   const hourMarks = useMemo(() => {
     const marks: number[] = [];
@@ -94,7 +115,13 @@ export function AgendaDayView({ date, appointments, workingHours }: Props) {
           <div className="border-b border-cream-dark/60 px-4 py-3 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
             Agenda do dia
           </div>
-          <div className="relative" style={{ height: totalHeight }}>
+          <div
+            className={onEmptySlotClick ? 'relative cursor-pointer' : 'relative'}
+            style={{ height: totalHeight }}
+            onClick={handleGridClick}
+            role={onEmptySlotClick ? 'button' : undefined}
+            tabIndex={onEmptySlotClick ? 0 : undefined}
+          >
             {/* Linhas de hora */}
             {hourMarks.map((m) => (
               <div

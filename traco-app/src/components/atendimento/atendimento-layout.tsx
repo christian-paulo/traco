@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 
@@ -92,30 +92,24 @@ export function AtendimentoLayout(props: Props) {
   const [activeTab, setActiveTab] = useState<TabKey>('resumo');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [fullscreenPreference, setFullscreenPreference] = useState(true);
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [finalizeOpen, setFinalizeOpen] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
   const [reactionOpen, setReactionOpen] = useState(false);
   const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
 
-  // startTime: prefere scheduled_start_at, senão performed_at, senão agora
-  const startTime = useMemo(() => {
-    const ref =
-      props.appointment.scheduled_start_at ??
-      props.appointment.performed_at ??
-      new Date().toISOString();
-    return new Date(ref).getTime();
-  }, [props.appointment.scheduled_start_at, props.appointment.performed_at]);
+  // Cronômetro: captura startTime UMA vez no mount.
+  // Não depende de scheduled_start_at — começa a contar do momento que a designer abriu a tela.
+  const [startTime] = useState<Date>(() => new Date());
+  const [now, setNow] = useState<Date>(() => new Date());
 
-  // Cronômetro: usa Date.now() em cada tick — funciona em segundo plano
   useEffect(() => {
-    function tick() {
-      setElapsedSeconds(Math.max(0, Math.floor((Date.now() - startTime) / 1000)));
-    }
-    tick();
-    const interval = window.setInterval(tick, 1000);
+    const interval = window.setInterval(() => {
+      setNow(new Date());
+    }, 1000);
     return () => window.clearInterval(interval);
-  }, [startTime]);
+  }, []);
+
+  const elapsedSeconds = Math.max(0, Math.floor((now.getTime() - startTime.getTime()) / 1000));
 
   // Carrega preferência de fullscreen do localStorage
   useEffect(() => {

@@ -6,15 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatRelativeDate, getInitials } from '@/lib/format';
 import type { ActiveReactionSummary } from '@/lib/queries/dashboard';
-
-const TYPE_LABEL: Record<string, string> = {
-  allergy: 'Alergia',
-  irritation: 'Irritação',
-  hypersensitivity: 'Hipersensibilidade',
-  positive_excellent: 'Resultado excelente',
-  below_expected: 'Abaixo do esperado',
-  other: 'Outro',
-};
+import { reactionTypeLabel } from '@/lib/reactions/labels';
 
 type Props = {
   total: number;
@@ -58,7 +50,7 @@ export function ActiveReactionsCard({ total, recent }: Props) {
                       {r.client_name}
                     </p>
                     <p className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-                      <span>{TYPE_LABEL[r.reaction_type] ?? r.reaction_type}</span>
+                      <span>{reactionTypeLabel(r.reaction_type)}</span>
                       <span>·</span>
                       <span>{formatRelativeDate(r.recorded_at)}</span>
                     </p>

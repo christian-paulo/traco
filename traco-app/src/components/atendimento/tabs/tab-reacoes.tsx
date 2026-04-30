@@ -16,6 +16,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { formatDate } from '@/lib/format';
 import type { ReactionRow, ReactionStatus, ReactionType } from '@/lib/queries/reactions';
+import {
+  occurredWhenLabel,
+  reactionStatusLabel,
+  reactionTypeLabel,
+} from '@/lib/reactions/labels';
 import { cn } from '@/lib/utils';
 import { deleteReaction, updateReactionStatus } from '@/server/actions/reactions';
 
@@ -27,35 +32,19 @@ type Props = {
   reactions: ReactionRow[];
 };
 
-const TYPE_META: Record<ReactionType, { label: string; cls: string }> = {
-  allergy: { label: 'Alergia', cls: 'border-red-300 bg-red-50 text-red-800' },
-  irritation: { label: 'Irritação', cls: 'border-orange-300 bg-orange-50 text-orange-800' },
-  hypersensitivity: {
-    label: 'Hipersensibilidade',
-    cls: 'border-amber-300 bg-amber-50 text-amber-800',
-  },
-  positive_excellent: {
-    label: 'Excelente resultado',
-    cls: 'border-emerald-300 bg-emerald-50 text-emerald-800',
-  },
-  below_expected: {
-    label: 'Abaixo do esperado',
-    cls: 'border-slate-300 bg-slate-50 text-slate-700',
-  },
-  other: { label: 'Outro', cls: 'border-muted bg-muted text-muted-foreground' },
+const TYPE_CLS: Record<ReactionType, string> = {
+  allergy: 'border-red-300 bg-red-50 text-red-800',
+  irritation: 'border-orange-300 bg-orange-50 text-orange-800',
+  hypersensitivity: 'border-amber-300 bg-amber-50 text-amber-800',
+  positive_excellent: 'border-emerald-300 bg-emerald-50 text-emerald-800',
+  below_expected: 'border-slate-300 bg-slate-50 text-slate-700',
+  other: 'border-muted bg-muted text-muted-foreground',
 };
 
-const STATUS_META: Record<ReactionStatus, { label: string; cls: string }> = {
-  active: { label: 'Ativa', cls: 'border-red-400 bg-red-100 text-red-800' },
-  observation: { label: 'Em observação', cls: 'border-amber-400 bg-amber-100 text-amber-800' },
-  resolved: { label: 'Resolvida', cls: 'border-emerald-400 bg-emerald-100 text-emerald-800' },
-};
-
-const WHEN_LABEL: Record<string, string> = {
-  during: 'Durante',
-  immediately_after: 'Logo após',
-  '24_72h_after': '24-72h depois',
-  late_1week_plus: 'Tardia (1 semana+)',
+const STATUS_CLS: Record<ReactionStatus, string> = {
+  active: 'border-red-400 bg-red-100 text-red-800',
+  observation: 'border-amber-400 bg-amber-100 text-amber-800',
+  resolved: 'border-emerald-400 bg-emerald-100 text-emerald-800',
 };
 
 export function TabReacoes({ clientId, appointmentId, reactions }: Props) {
@@ -121,8 +110,8 @@ function ReactionCard({ reaction }: { reaction: ReactionRow }) {
   const [pending, startTransition] = useTransition();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmResolve, setConfirmResolve] = useState(false);
-  const typeMeta = TYPE_META[reaction.reaction_type];
-  const statusMeta = STATUS_META[reaction.status];
+  const typeCls = TYPE_CLS[reaction.reaction_type] ?? '';
+  const statusCls = STATUS_CLS[reaction.status] ?? '';
 
   function changeStatus(next: ReactionStatus) {
     startTransition(async () => {
@@ -156,18 +145,18 @@ function ReactionCard({ reaction }: { reaction: ReactionRow }) {
         <div className="flex items-start justify-between gap-3">
           <div className="flex flex-col gap-1.5">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline" className={typeMeta.cls}>
+              <Badge variant="outline" className={typeCls}>
                 {reaction.reaction_type === 'allergy' ||
                 reaction.reaction_type === 'irritation' ? (
                   <AlertTriangle className="size-3" />
                 ) : null}
-                {typeMeta.label}
+                {reactionTypeLabel(reaction.reaction_type)}
               </Badge>
-              <Badge variant="outline" className={statusMeta.cls}>
-                {statusMeta.label}
+              <Badge variant="outline" className={statusCls}>
+                {reactionStatusLabel(reaction.status)}
               </Badge>
               <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-                {WHEN_LABEL[reaction.occurred_when] ?? reaction.occurred_when}
+                {occurredWhenLabel(reaction.occurred_when)}
               </span>
             </div>
             <p className="text-xs text-muted-foreground">

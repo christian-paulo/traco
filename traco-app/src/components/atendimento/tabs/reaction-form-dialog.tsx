@@ -23,6 +23,11 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import type { ReactionStatus, ReactionType, ReactionWhen } from '@/lib/queries/reactions';
+import {
+  OCCURRED_WHEN_LABELS,
+  REACTION_STATUS_LABELS,
+  REACTION_TYPE_LABELS,
+} from '@/lib/reactions/labels';
 import { createReaction } from '@/server/actions/reactions';
 
 type Props = {
@@ -32,27 +37,17 @@ type Props = {
   appointmentId: string | null;
 };
 
-const TYPES: Array<{ value: ReactionType; label: string }> = [
-  { value: 'allergy', label: 'Alergia' },
-  { value: 'irritation', label: 'Irritação' },
-  { value: 'hypersensitivity', label: 'Hipersensibilidade' },
-  { value: 'positive_excellent', label: 'Resultado excelente' },
-  { value: 'below_expected', label: 'Resultado abaixo do esperado' },
-  { value: 'other', label: 'Outro' },
-];
+const TYPES: Array<{ value: ReactionType; label: string }> = (
+  ['allergy', 'irritation', 'hypersensitivity', 'positive_excellent', 'below_expected', 'other'] as const
+).map((v) => ({ value: v, label: REACTION_TYPE_LABELS[v] }));
 
-const WHENS: Array<{ value: ReactionWhen; label: string }> = [
-  { value: 'during', label: 'Durante o procedimento' },
-  { value: 'immediately_after', label: 'Logo após' },
-  { value: '24_72h_after', label: '24-72h depois' },
-  { value: 'late_1week_plus', label: 'Tardia (1 semana ou mais)' },
-];
+const WHENS: Array<{ value: ReactionWhen; label: string }> = (
+  ['during', 'immediately_after', '24_72h_after', 'late_1week_plus'] as const
+).map((v) => ({ value: v, label: OCCURRED_WHEN_LABELS[v] }));
 
-const STATUSES: Array<{ value: ReactionStatus; label: string }> = [
-  { value: 'observation', label: 'Em observação' },
-  { value: 'active', label: 'Ativa' },
-  { value: 'resolved', label: 'Resolvida' },
-];
+const STATUSES: Array<{ value: ReactionStatus; label: string }> = (
+  ['observation', 'active', 'resolved'] as const
+).map((v) => ({ value: v, label: REACTION_STATUS_LABELS[v] }));
 
 export function ReactionFormDialog({ open, onOpenChange, clientId, appointmentId }: Props) {
   const [type, setType] = useState<ReactionType>('irritation');

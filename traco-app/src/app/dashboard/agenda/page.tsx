@@ -1,9 +1,11 @@
 import type { Metadata } from 'next';
 
-import { AgendaDayView, type AgendaAppointment } from '@/components/agenda/agenda-day-view';
-import { AgendaToolbar } from '@/components/agenda/agenda-toolbar';
+import { AgendaPageContent } from '@/components/agenda/agenda-page-content';
+import type { AgendaAppointment } from '@/components/agenda/agenda-day-view';
 import { Card, CardContent } from '@/components/ui/card';
+import { listClients } from '@/lib/queries/clients';
 import { getClientsWithActiveReactionIds } from '@/lib/queries/dashboard';
+import { listProcedures } from '@/lib/queries/procedures';
 import { getCurrentProfessional, listWorkingHours } from '@/lib/queries/studio';
 import { createClient } from '@/lib/supabase/server';
 
@@ -49,7 +51,13 @@ export default async function AgendaPage({ searchParams }: { searchParams: Searc
   const dayStart = `${date}T00:00:00.000Z`;
   const dayEnd = `${date}T23:59:59.999Z`;
 
-  const [{ data: appts }, hours, clientsWithReactions] = await Promise.all([
+  const [
+    { data: appts },
+    hours,
+    clientsWithReactions,
+    { rows: clientsRows },
+    procedures,
+  ] = await Promise.all([
     supabase
       .from('appointments')
       .select(
@@ -61,6 +69,8 @@ export default async function AgendaPage({ searchParams }: { searchParams: Searc
       .order('scheduled_start_at', { ascending: true }),
     listWorkingHours(professional.id),
     getClientsWithActiveReactionIds(),
+    listClients({}),
+    listProcedures(false),
   ]);
 
   type Raw = {
@@ -102,19 +112,15 @@ export default async function AgendaPage({ searchParams }: { searchParams: Searc
   const dow = new Date(`${date}T00:00:00`).getDay();
   const todayHours = hours.find((h) => h.day_of_week === dow) ?? null;
 
+  const clients = clientsRows.map((c) => ({
+    id: c.id,
+    full_name: c.full_name,
+    phone: c.phone,
+  }));
+
   return (
     <div className="flex flex-col gap-8">
-      <header className="flex flex-col gap-2">
-        <div className="h-px w-8 bg-[var(--gold)]" />
-        <h1 className="font-serif text-4xl font-medium tracking-tight text-foreground">Agenda</h1>
-        <p className="text-xs font-medium uppercase tracking-[0.3em] text-muted-foreground">
-          Sua semana, seu dia
-        </p>
-      </header>
-
-      <AgendaToolbar currentDate={date} />
-
-      <AgendaDayView
+      <AgendaPageContent
         date={date}
         appointments={appointments}
         workingHours={
@@ -126,6 +132,8 @@ export default async function AgendaPage({ searchParams }: { searchParams: Searc
               }
             : null
         }
+        clients={clients}
+        procedures={procedures}
       />
     </div>
   );
