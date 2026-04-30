@@ -378,76 +378,76 @@ alter table public.waitlist_entries enable row level security;
 
 -- studios
 create policy studios_select_auth on public.studios
-  for select to authenticated using (tenant_id = auth.tenant_id());
+  for select to authenticated using (tenant_id = public.tenant_id());
 create policy studios_insert_auth on public.studios
-  for insert to authenticated with check (tenant_id = auth.tenant_id());
+  for insert to authenticated with check (tenant_id = public.tenant_id());
 create policy studios_update_auth on public.studios
-  for update to authenticated using (tenant_id = auth.tenant_id())
-  with check (tenant_id = auth.tenant_id());
+  for update to authenticated using (tenant_id = public.tenant_id())
+  with check (tenant_id = public.tenant_id());
 create policy studios_delete_auth on public.studios
-  for delete to authenticated using (tenant_id = auth.tenant_id());
+  for delete to authenticated using (tenant_id = public.tenant_id());
 
 -- professionals
 create policy professionals_select_auth on public.professionals
-  for select to authenticated using (tenant_id = auth.tenant_id());
+  for select to authenticated using (tenant_id = public.tenant_id());
 create policy professionals_insert_auth on public.professionals
-  for insert to authenticated with check (tenant_id = auth.tenant_id());
+  for insert to authenticated with check (tenant_id = public.tenant_id());
 create policy professionals_update_auth on public.professionals
-  for update to authenticated using (tenant_id = auth.tenant_id())
-  with check (tenant_id = auth.tenant_id());
+  for update to authenticated using (tenant_id = public.tenant_id())
+  with check (tenant_id = public.tenant_id());
 create policy professionals_delete_auth on public.professionals
-  for delete to authenticated using (tenant_id = auth.tenant_id());
+  for delete to authenticated using (tenant_id = public.tenant_id());
 
 -- professional_services
 create policy prof_services_select_auth on public.professional_services
-  for select to authenticated using (tenant_id = auth.tenant_id());
+  for select to authenticated using (tenant_id = public.tenant_id());
 create policy prof_services_insert_auth on public.professional_services
-  for insert to authenticated with check (tenant_id = auth.tenant_id());
+  for insert to authenticated with check (tenant_id = public.tenant_id());
 create policy prof_services_update_auth on public.professional_services
-  for update to authenticated using (tenant_id = auth.tenant_id())
-  with check (tenant_id = auth.tenant_id());
+  for update to authenticated using (tenant_id = public.tenant_id())
+  with check (tenant_id = public.tenant_id());
 create policy prof_services_delete_auth on public.professional_services
-  for delete to authenticated using (tenant_id = auth.tenant_id());
+  for delete to authenticated using (tenant_id = public.tenant_id());
 
 -- working_hours
 create policy working_hours_select_auth on public.working_hours
-  for select to authenticated using (tenant_id = auth.tenant_id());
+  for select to authenticated using (tenant_id = public.tenant_id());
 create policy working_hours_insert_auth on public.working_hours
-  for insert to authenticated with check (tenant_id = auth.tenant_id());
+  for insert to authenticated with check (tenant_id = public.tenant_id());
 create policy working_hours_update_auth on public.working_hours
-  for update to authenticated using (tenant_id = auth.tenant_id())
-  with check (tenant_id = auth.tenant_id());
+  for update to authenticated using (tenant_id = public.tenant_id())
+  with check (tenant_id = public.tenant_id());
 create policy working_hours_delete_auth on public.working_hours
-  for delete to authenticated using (tenant_id = auth.tenant_id());
+  for delete to authenticated using (tenant_id = public.tenant_id());
 
 -- time_off
 create policy time_off_select_auth on public.time_off
-  for select to authenticated using (tenant_id = auth.tenant_id());
+  for select to authenticated using (tenant_id = public.tenant_id());
 create policy time_off_insert_auth on public.time_off
-  for insert to authenticated with check (tenant_id = auth.tenant_id());
+  for insert to authenticated with check (tenant_id = public.tenant_id());
 create policy time_off_update_auth on public.time_off
-  for update to authenticated using (tenant_id = auth.tenant_id())
-  with check (tenant_id = auth.tenant_id());
+  for update to authenticated using (tenant_id = public.tenant_id())
+  with check (tenant_id = public.tenant_id());
 create policy time_off_delete_auth on public.time_off
-  for delete to authenticated using (tenant_id = auth.tenant_id());
+  for delete to authenticated using (tenant_id = public.tenant_id());
 
 -- booking_drafts
 create policy booking_drafts_select_auth on public.booking_drafts
-  for select to authenticated using (tenant_id = auth.tenant_id());
+  for select to authenticated using (tenant_id = public.tenant_id());
 create policy booking_drafts_update_auth on public.booking_drafts
-  for update to authenticated using (tenant_id = auth.tenant_id())
-  with check (tenant_id = auth.tenant_id());
+  for update to authenticated using (tenant_id = public.tenant_id())
+  with check (tenant_id = public.tenant_id());
 create policy booking_drafts_delete_auth on public.booking_drafts
-  for delete to authenticated using (tenant_id = auth.tenant_id());
+  for delete to authenticated using (tenant_id = public.tenant_id());
 
 -- waitlist_entries
 create policy waitlist_select_auth on public.waitlist_entries
-  for select to authenticated using (tenant_id = auth.tenant_id());
+  for select to authenticated using (tenant_id = public.tenant_id());
 create policy waitlist_update_auth on public.waitlist_entries
-  for update to authenticated using (tenant_id = auth.tenant_id())
-  with check (tenant_id = auth.tenant_id());
+  for update to authenticated using (tenant_id = public.tenant_id())
+  with check (tenant_id = public.tenant_id());
 create policy waitlist_delete_auth on public.waitlist_entries
-  for delete to authenticated using (tenant_id = auth.tenant_id());
+  for delete to authenticated using (tenant_id = public.tenant_id());
 
 -- =====================================================================
 -- Policies públicas (anônimo) — preparação pra /agendar/[slug]

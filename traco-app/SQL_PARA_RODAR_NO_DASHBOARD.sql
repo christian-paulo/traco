@@ -142,7 +142,7 @@ create index idx_photos_client_id on public.photos(client_id);
 -- Funções helper
 -- =====================================================================
 
-CREATE OR REPLACE FUNCTION public.tenant_id()
+create or replace function public.tenant_id()
 returns uuid
 language sql
 stable
