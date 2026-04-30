@@ -61,6 +61,7 @@ export function FichaForm({ token, fields, initialAnswers }: Props) {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [signatureEmpty, setSignatureEmpty] = useState(true);
+  const [signatureTouched, setSignatureTouched] = useState(false);
   const [isPending, startTransition] = useTransition();
   const sigRef = useRef<SignatureCanvas>(null);
 
@@ -97,7 +98,9 @@ export function FichaForm({ token, fields, initialAnswers }: Props) {
 
     const sig = sigRef.current;
     if (!sig || sig.isEmpty()) {
-      toast.error('Por favor, assine antes de enviar.');
+      setSignatureTouched(true);
+      toast.error('Assinatura é obrigatória — assine no quadro abaixo.');
+      sig?.getCanvas()?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
 
@@ -129,9 +132,19 @@ export function FichaForm({ token, fields, initialAnswers }: Props) {
         return renderField(field, value, (next) => setValue(field.id, next), error, isPending);
       })}
 
-      <div className="bg-card flex flex-col gap-2 rounded-lg border border-[var(--gold)]/20 p-5">
-        <h2 className="font-serif text-lg font-medium text-foreground">Sua assinatura</h2>
-        <p className="text-xs text-muted-foreground">Assine no quadro abaixo com o dedo.</p>
+      <div
+        className={`bg-card flex flex-col gap-2 rounded-lg border p-5 transition-colors ${
+          signatureTouched && signatureEmpty
+            ? 'border-destructive/60 ring-2 ring-destructive/20'
+            : 'border-[var(--gold)]/20'
+        }`}
+      >
+        <h2 className="font-serif text-lg font-medium text-foreground">
+          Sua assinatura <span className="text-destructive">*</span>
+        </h2>
+        <p className="text-xs text-muted-foreground">
+          Campo obrigatório. Assine no quadro abaixo com o dedo.
+        </p>
         <div className="overflow-hidden rounded-lg border-2 border-[var(--gold)]/40 bg-white">
           <SignatureCanvas
             ref={sigRef}
@@ -140,7 +153,10 @@ export function FichaForm({ token, fields, initialAnswers }: Props) {
             canvasProps={{
               className: 'block w-full h-[200px] touch-none',
             }}
-            onEnd={() => setSignatureEmpty(false)}
+            onEnd={() => {
+              setSignatureEmpty(false);
+              setSignatureTouched(true);
+            }}
           />
         </div>
         <div className="flex items-center justify-between">
@@ -153,6 +169,11 @@ export function FichaForm({ token, fields, initialAnswers }: Props) {
             Limpar
           </button>
         </div>
+        {signatureTouched && signatureEmpty ? (
+          <p className="text-xs font-medium text-destructive">
+            Assine antes de enviar a ficha.
+          </p>
+        ) : null}
       </div>
 
       <p className="text-xs leading-relaxed text-muted-foreground">
@@ -161,7 +182,7 @@ export function FichaForm({ token, fields, initialAnswers }: Props) {
 
       <button
         type="submit"
-        disabled={isPending}
+        disabled={isPending || signatureEmpty}
         className="bg-[var(--gold)] text-ink hover:bg-[var(--gold-dark)] hover:text-cream flex h-14 items-center justify-center gap-2 rounded-lg text-sm font-medium uppercase tracking-[0.2em] transition-colors disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isPending ? (
@@ -169,6 +190,8 @@ export function FichaForm({ token, fields, initialAnswers }: Props) {
             <Loader2 className="size-4 animate-spin" />
             Enviando...
           </>
+        ) : signatureEmpty ? (
+          'Assine para continuar'
         ) : (
           'Assinar e enviar'
         )}
