@@ -4,6 +4,7 @@ import { Pin, PinOff, Plus, StickyNote, Trash2 } from 'lucide-react';
 import { useMemo, useState, useTransition } from 'react';
 import { toast } from 'sonner';
 
+import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatDate } from '@/lib/format';
@@ -15,7 +16,7 @@ import { NoteFormDialog } from './note-form-dialog';
 
 type Props = {
   clientId: string;
-  appointmentId: string;
+  appointmentId: string | null;
   notes: NoteRow[];
 };
 
@@ -48,7 +49,7 @@ export function TabNotas({ clientId, appointmentId, notes }: Props) {
               <StickyNote className="size-8 text-[var(--gold)]" strokeWidth={1.25} />
             </div>
             <p className="font-serif text-lg italic text-muted-foreground">
-              Nenhuma nota ainda.
+              Comece a anotar — cada cliente tem detalhes que valem ouro.
             </p>
             <Button variant="premium" size="xl" onClick={() => setOpen(true)}>
               <Plus className="size-4" />
@@ -96,6 +97,7 @@ export function TabNotas({ clientId, appointmentId, notes }: Props) {
 
 function NoteCard({ note }: { note: NoteRow }) {
   const [pending, startTransition] = useTransition();
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const rotation = rotationFor(note.id);
 
   function handleTogglePin() {
@@ -106,12 +108,10 @@ function NoteCard({ note }: { note: NoteRow }) {
     });
   }
 
-  function handleDelete() {
-    startTransition(async () => {
-      const result = await deleteNote(note.id);
-      if (result.success) toast.success('Nota excluída.');
-      else toast.error(result.error || 'Erro ao excluir.');
-    });
+  async function handleDelete() {
+    const result = await deleteNote(note.id);
+    if (result.success) toast.success('Nota excluída.');
+    else throw new Error(result.error || 'Erro ao excluir.');
   }
 
   return (
@@ -143,7 +143,7 @@ function NoteCard({ note }: { note: NoteRow }) {
           </button>
           <button
             type="button"
-            onClick={handleDelete}
+            onClick={() => setConfirmOpen(true)}
             disabled={pending}
             className="inline-flex size-7 items-center justify-center rounded text-foreground/60 hover:bg-destructive/10 hover:text-destructive"
             aria-label="Excluir nota"
@@ -156,6 +156,16 @@ function NoteCard({ note }: { note: NoteRow }) {
       <p className="mt-auto text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
         {formatDate(note.created_at, 'short')}
       </p>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Excluir nota?"
+        description={`A nota "${note.title}" será removida permanentemente. Essa ação não pode ser desfeita.`}
+        confirmLabel="Excluir"
+        icon={Trash2}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

@@ -15,8 +15,11 @@ export type ClientRow = {
   updated_at: string;
 };
 
+export type FichaStatus = 'none' | 'pending' | 'expired' | 'signed';
+
 export type ClientWithLastVisit = ClientRow & {
   last_visit_at: string | null;
+  ficha_status: FichaStatus;
 };
 
 export const PAGE_SIZE = 50;
@@ -54,16 +57,47 @@ export async function listClients({
   if (error) throw error;
 
   const ids = (data ?? []).map((c) => c.id);
-  let lastVisitMap = new Map<string, string>();
+  const lastVisitMap = new Map<string, string>();
+  const fichaStatusMap = new Map<string, FichaStatus>();
   if (ids.length > 0) {
-    const { data: appts } = await supabase
-      .from('appointments')
-      .select('client_id, performed_at')
-      .in('client_id', ids)
-      .order('performed_at', { ascending: false });
+    const [{ data: appts }, { data: fichas }] = await Promise.all([
+      supabase
+        .from('appointments')
+        .select('client_id, performed_at')
+        .in('client_id', ids)
+        .order('performed_at', { ascending: false }),
+      supabase
+        .from('anamnesis_forms')
+        .select('client_id, status, expires_at, created_at')
+        .in('client_id', ids)
+        .order('created_at', { ascending: false }),
+    ]);
     for (const a of appts ?? []) {
       if (!lastVisitMap.has(a.client_id)) {
         lastVisitMap.set(a.client_id, a.performed_at);
+      }
+    }
+    const now = Date.now();
+    for (const f of fichas ?? []) {
+      const cid = f.client_id as string;
+      const current = fichaStatusMap.get(cid);
+      // Signed sempre vence
+      if (current === 'signed') continue;
+      if (f.status === 'signed') {
+        fichaStatusMap.set(cid, 'signed');
+        continue;
+      }
+      if (f.status === 'expired') {
+        if (!current) fichaStatusMap.set(cid, 'expired');
+        continue;
+      }
+      if (f.status === 'pending') {
+        const expired = new Date(f.expires_at as string).getTime() < now;
+        if (expired) {
+          if (current !== 'pending') fichaStatusMap.set(cid, 'expired');
+        } else {
+          fichaStatusMap.set(cid, 'pending');
+        }
       }
     }
   }
@@ -71,6 +105,7 @@ export async function listClients({
   const rows: ClientWithLastVisit[] = (data ?? []).map((c) => ({
     ...(c as ClientRow),
     last_visit_at: lastVisitMap.get(c.id) ?? null,
+    ficha_status: fichaStatusMap.get(c.id) ?? 'none',
   }));
 
   return { rows, total: count ?? 0 };

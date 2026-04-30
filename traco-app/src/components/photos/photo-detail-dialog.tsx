@@ -4,6 +4,7 @@ import { Loader2, Star, Trash2 } from 'lucide-react';
 import { useEffect, useState, useTransition } from 'react';
 import { toast } from 'sonner';
 
+import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -42,7 +43,7 @@ export function PhotoDetailDialog({ open, onOpenChange, photo, procedures }: Pro
   const [procedureId, setProcedureId] = useState<string>('');
   const [isKey, setIsKey] = useState(false);
   const [savePending, startSave] = useTransition();
-  const [deletePending, startDelete] = useTransition();
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
     if (photo) {
@@ -67,17 +68,15 @@ export function PhotoDetailDialog({ open, onOpenChange, photo, procedures }: Pro
     });
   }
 
-  function handleDelete() {
+  async function performDelete() {
     if (!photo) return;
-    startDelete(async () => {
-      const result = await deletePhoto(photo.id);
-      if (result.success) {
-        toast.success('Foto excluída.');
-        onOpenChange(false);
-      } else {
-        toast.error(result.error || 'Erro ao excluir.');
-      }
-    });
+    const result = await deletePhoto(photo.id);
+    if (result.success) {
+      toast.success('Foto excluída.');
+      onOpenChange(false);
+    } else {
+      throw new Error(result.error || 'Erro ao excluir.');
+    }
   }
 
   const dirty =
@@ -207,15 +206,10 @@ export function PhotoDetailDialog({ open, onOpenChange, photo, procedures }: Pro
               <Button
                 type="button"
                 variant="ghost"
-                onClick={handleDelete}
-                disabled={deletePending}
+                onClick={() => setConfirmDelete(true)}
                 className="text-destructive hover:bg-destructive/10 hover:text-destructive mt-auto self-start"
               >
-                {deletePending ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <Trash2 className="size-4" />
-                )}
+                <Trash2 className="size-4" />
                 Excluir foto
               </Button>
             </aside>
@@ -249,6 +243,16 @@ export function PhotoDetailDialog({ open, onOpenChange, photo, procedures }: Pro
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        title="Excluir foto?"
+        description="A foto será removida permanentemente. Essa ação não pode ser desfeita."
+        confirmLabel="Excluir"
+        icon={Trash2}
+        onConfirm={performDelete}
+      />
     </Dialog>
   );
 }

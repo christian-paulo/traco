@@ -29,7 +29,7 @@ type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   clientId: string;
-  appointmentId: string;
+  appointmentId: string | null;
 };
 
 const TYPES: Array<{ value: ReactionType; label: string }> = [
@@ -90,6 +90,12 @@ export function ReactionFormDialog({ open, onOpenChange, clientId, appointmentId
       });
       if (result.success) {
         toast.success('Reação registrada.');
+        if (status === 'active') {
+          toast.warning(
+            'Esta reação aparecerá em alertas no próximo atendimento desta cliente.',
+            { duration: 6000 },
+          );
+        }
         reset();
         onOpenChange(false);
       } else {

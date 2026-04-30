@@ -6,6 +6,7 @@ import type { ReactElement } from 'react';
 import AnamnesisCompletedClientEmail from '@/emails/anamnesis-completed-client';
 import AnamnesisCompletedDesignerEmail from '@/emails/anamnesis-completed-designer';
 import AnamnesisInviteEmail from '@/emails/anamnesis-invite';
+import PostAttendanceEmail from '@/emails/post-attendance';
 import RecoveryInviteEmail from '@/emails/recovery-invite';
 
 const apiKey = process.env.RESEND_API_KEY;
@@ -134,6 +135,34 @@ export async function sendAnamnesisCompletedDesigner(params: {
       }),
     },
     'anamnesis-completed-designer',
+  );
+}
+
+export async function sendPostAttendanceEmail(params: {
+  to: string;
+  clientName: string;
+  designerName: string;
+  procedureName: string;
+  performedDate: string;
+  finalPrice: string;
+  returnDate: string | null;
+  postCareNotes: string[];
+}): Promise<EmailResult> {
+  return rawSend(
+    {
+      to: params.to,
+      subject: 'Obrigada pela visita ao Traço',
+      react: PostAttendanceEmail({
+        clientName: params.clientName,
+        designerName: params.designerName,
+        procedureName: params.procedureName,
+        performedDate: params.performedDate,
+        finalPrice: params.finalPrice,
+        returnDate: params.returnDate,
+        postCareNotes: params.postCareNotes,
+      }),
+    },
+    'post-attendance',
   );
 }
 

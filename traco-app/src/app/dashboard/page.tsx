@@ -2,10 +2,19 @@ import { AlertCircle, CalendarCheck, TrendingUp, Users, type LucideIcon } from '
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
+import { ActiveReactionsCard } from '@/components/dashboard/active-reactions-card';
+import { PinnedNotesCard } from '@/components/dashboard/pinned-notes-card';
+import { TodayAppointmentsCard } from '@/components/dashboard/today-appointments-card';
+import { SeedTrigger } from '@/components/dashboard/seed-trigger';
 import { OnboardingChecklist, type OnboardingStatus } from '@/components/onboarding/onboarding-checklist';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatCurrency, getFirstName } from '@/lib/format';
-import { getDashboardStats } from '@/lib/queries/dashboard';
+import {
+  getActiveReactionsSummary,
+  getDashboardStats,
+  getPinnedNotesRecent,
+  getTodayAppointments,
+} from '@/lib/queries/dashboard';
 import { getCurrentProfile } from '@/lib/queries/profile';
 import { createClient } from '@/lib/supabase/server';
 import { cn } from '@/lib/utils';
@@ -58,17 +67,6 @@ function StatCard({ label, icon: Icon, value, prefix, href }: StatCardProps) {
   return card;
 }
 
-function SectionHeader({ title }: { title: string }) {
-  return (
-    <CardHeader className="px-6 pb-0">
-      <div className="mb-3 h-px w-6 bg-[var(--gold)]" />
-      <CardTitle className="font-serif text-xl font-medium tracking-tight text-foreground">
-        {title}
-      </CardTitle>
-    </CardHeader>
-  );
-}
-
 function formatRevenue(value: number) {
   const formatted = formatCurrency(value);
   const match = formatted.match(/^(R\$)\s*(.+)$/);
@@ -80,7 +78,12 @@ export default async function DashboardPage() {
   const profile = await getCurrentProfile();
   if (!profile) redirect('/login');
 
-  const stats = await getDashboardStats(profile.tenantId);
+  const [stats, reactionsSummary, todayAppointments, pinnedNotes] = await Promise.all([
+    getDashboardStats(profile.tenantId),
+    getActiveReactionsSummary(3),
+    getTodayAppointments(),
+    getPinnedNotesRecent(5),
+  ]);
   const firstName = getFirstName(profile.fullName ?? profile.email);
   const revenue = formatRevenue(stats.monthlyRevenue);
 
@@ -154,20 +157,21 @@ export default async function DashboardPage() {
         />
       </section>
 
-      <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card variant="premium" className="bg-card border-0 ring-1 ring-[var(--border)] py-6">
-          <SectionHeader title="Próximos atendimentos" />
-          <CardContent className="px-6 pt-2">
-            <p className="font-serif text-base italic text-muted-foreground">Em breve.</p>
-          </CardContent>
-        </Card>
-        <Card variant="premium" className="bg-card border-0 ring-1 ring-[var(--border)] py-6">
-          <SectionHeader title="Atividade recente" />
-          <CardContent className="px-6 pt-2">
-            <p className="font-serif text-base italic text-muted-foreground">Em breve.</p>
-          </CardContent>
-        </Card>
+      <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <TodayAppointmentsCard appointments={todayAppointments} />
+        </div>
+        <ActiveReactionsCard
+          total={reactionsSummary.total}
+          recent={reactionsSummary.recent}
+        />
       </section>
+
+      <section className="grid grid-cols-1 gap-4">
+        <PinnedNotesCard notes={pinnedNotes} />
+      </section>
+
+      <SeedTrigger />
     </div>
   );
 }

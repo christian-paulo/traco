@@ -79,6 +79,65 @@ export async function getAnamnesisFormById(id: string): Promise<
   };
 }
 
+export type AnamnesisVersionRow = {
+  id: string;
+  form_id: string;
+  version_number: number;
+  is_original: boolean;
+  answers: Record<string, unknown>;
+  signature_png: string | null;
+  signed_at: string | null;
+  signer_ip: string | null;
+  edited_by: string | null;
+  edit_reason: string | null;
+  created_at: string;
+  edited_by_name: string | null;
+};
+
+export async function listAnamnesisVersions(formId: string): Promise<AnamnesisVersionRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('anamnesis_form_versions')
+    .select(
+      'id, form_id, version_number, is_original, answers, signature_png, signed_at, signer_ip, edited_by, edit_reason, created_at, profiles:edited_by(full_name)',
+    )
+    .eq('form_id', formId)
+    .order('version_number', { ascending: true });
+  if (error) throw error;
+  type Raw = {
+    id: string;
+    form_id: string;
+    version_number: number;
+    is_original: boolean;
+    answers: Record<string, unknown> | null;
+    signature_png: string | null;
+    signed_at: string | null;
+    signer_ip: string | null;
+    edited_by: string | null;
+    edit_reason: string | null;
+    created_at: string;
+    profiles: { full_name: string } | { full_name: string }[] | null;
+  };
+  return (data ?? []).map((raw) => {
+    const r = raw as unknown as Raw;
+    const editor = Array.isArray(r.profiles) ? r.profiles[0] ?? null : r.profiles;
+    return {
+      id: r.id,
+      form_id: r.form_id,
+      version_number: r.version_number,
+      is_original: r.is_original,
+      answers: (r.answers ?? {}) as Record<string, unknown>,
+      signature_png: r.signature_png,
+      signed_at: r.signed_at,
+      signer_ip: r.signer_ip,
+      edited_by: r.edited_by,
+      edit_reason: r.edit_reason,
+      created_at: r.created_at,
+      edited_by_name: editor?.full_name ?? null,
+    };
+  });
+}
+
 export type PublicFichaPayload = {
   form: {
     id: string;

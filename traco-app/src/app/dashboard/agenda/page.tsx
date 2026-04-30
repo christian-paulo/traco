@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { AgendaDayView, type AgendaAppointment } from '@/components/agenda/agenda-day-view';
 import { AgendaToolbar } from '@/components/agenda/agenda-toolbar';
 import { Card, CardContent } from '@/components/ui/card';
+import { getClientsWithActiveReactionIds } from '@/lib/queries/dashboard';
 import { getCurrentProfessional, listWorkingHours } from '@/lib/queries/studio';
 import { createClient } from '@/lib/supabase/server';
 
@@ -48,7 +49,7 @@ export default async function AgendaPage({ searchParams }: { searchParams: Searc
   const dayStart = `${date}T00:00:00.000Z`;
   const dayEnd = `${date}T23:59:59.999Z`;
 
-  const [{ data: appts }, hours] = await Promise.all([
+  const [{ data: appts }, hours, clientsWithReactions] = await Promise.all([
     supabase
       .from('appointments')
       .select(
@@ -59,6 +60,7 @@ export default async function AgendaPage({ searchParams }: { searchParams: Searc
       .lte('scheduled_start_at', dayEnd)
       .order('scheduled_start_at', { ascending: true }),
     listWorkingHours(professional.id),
+    getClientsWithActiveReactionIds(),
   ]);
 
   type Raw = {
@@ -92,6 +94,7 @@ export default async function AgendaPage({ searchParams }: { searchParams: Searc
         scheduled_end_at: r.scheduled_end_at,
         status: r.status,
         price: Number(r.price ?? 0),
+        has_active_reaction: clientsWithReactions.has(r.client_id),
       } satisfies AgendaAppointment;
     })
     .filter((v): v is AgendaAppointment => v !== null);

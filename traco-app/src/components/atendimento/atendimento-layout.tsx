@@ -1,6 +1,9 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
+
+import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 
 import type {
   AppointmentProcedureRow,
@@ -13,7 +16,7 @@ import type { NoteRow } from '@/lib/queries/professional-notes';
 import type { ReactionRow } from '@/lib/queries/reactions';
 
 import { AtendimentoHeader } from './atendimento-header';
-import { AtendimentoTabs, type TabKey } from './atendimento-tabs';
+import { AtendimentoTabs, TAB_KEYS, type TabKey } from './atendimento-tabs';
 import { FinalizarDialog } from './finalizar-dialog';
 import { QuickAddButton } from './quick-add-button';
 import { NoteFormDialog } from './tabs/note-form-dialog';
@@ -85,6 +88,7 @@ type Props = {
 };
 
 export function AtendimentoLayout(props: Props) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabKey>('resumo');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [fullscreenPreference, setFullscreenPreference] = useState(true);
@@ -92,6 +96,7 @@ export function AtendimentoLayout(props: Props) {
   const [finalizeOpen, setFinalizeOpen] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
   const [reactionOpen, setReactionOpen] = useState(false);
+  const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
 
   // startTime: prefere scheduled_start_at, senão performed_at, senão agora
   const startTime = useMemo(() => {
@@ -127,6 +132,63 @@ export function AtendimentoLayout(props: Props) {
     document.addEventListener('fullscreenchange', onChange);
     return () => document.removeEventListener('fullscreenchange', onChange);
   }, []);
+
+  // Atalhos de teclado
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      // Não interceptar quando usuário está digitando em input/textarea
+      const target = e.target as HTMLElement | null;
+      if (target) {
+        const tag = target.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable) return;
+      }
+
+      const mod = e.ctrlKey || e.metaKey;
+
+      if (mod && e.shiftKey && (e.key === 'F' || e.key === 'f')) {
+        e.preventDefault();
+        toggleFullscreen();
+        return;
+      }
+      if (mod && !e.shiftKey && (e.key === 'n' || e.key === 'N')) {
+        e.preventDefault();
+        setNoteOpen(true);
+        return;
+      }
+      if (mod && !e.shiftKey && (e.key === 'r' || e.key === 'R')) {
+        e.preventDefault();
+        setReactionOpen(true);
+        return;
+      }
+      if (e.key === 'Tab' && !e.altKey && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault();
+        const idx = TAB_KEYS.indexOf(activeTab);
+        if (idx === -1) return;
+        const delta = e.shiftKey ? -1 : 1;
+        const next = (idx + delta + TAB_KEYS.length) % TAB_KEYS.length;
+        setActiveTab(TAB_KEYS[next]);
+        return;
+      }
+      if (e.key === 'Escape') {
+        // Permite fechar dialogs primeiro; só pede confirmação de saída se nada aberto
+        if (
+          finalizeOpen ||
+          noteOpen ||
+          reactionOpen ||
+          exitConfirmOpen ||
+          document.querySelector('[data-slot="dialog-content"]')
+        ) {
+          return;
+        }
+        e.preventDefault();
+        setExitConfirmOpen(true);
+        return;
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, finalizeOpen, noteOpen, reactionOpen, exitConfirmOpen]);
 
   function toggleFullscreen() {
     if (document.fullscreenElement) {
@@ -236,6 +298,17 @@ export function AtendimentoLayout(props: Props) {
         onOpenChange={setReactionOpen}
         clientId={props.client.id}
         appointmentId={props.appointment.id}
+      />
+
+      <ConfirmDialog
+        open={exitConfirmOpen}
+        onOpenChange={setExitConfirmOpen}
+        title="Sair do Modo Atendimento?"
+        description="O cronômetro continuará registrado. Você pode voltar a qualquer momento — o atendimento só é finalizado pelo botão Finalizar."
+        confirmLabel="Sair"
+        cancelLabel="Continuar atendendo"
+        variant="premium"
+        onConfirm={() => router.push('/dashboard/agenda')}
       />
 
       <span className="sr-only">{fullscreenPreference ? 'fs-on' : 'fs-off'}</span>

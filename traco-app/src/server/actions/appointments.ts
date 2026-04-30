@@ -2,6 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 
+import { sendPostAttendanceEmail } from '@/lib/email';
+import { formatCurrency, formatDate } from '@/lib/format';
 import { getCurrentProfessional } from '@/lib/queries/studio';
 import { getCurrentProfile } from '@/lib/queries/profile';
 import { createClient } from '@/lib/supabase/server';
@@ -190,6 +192,12 @@ type FinalizeInput = {
   final_note?: string;
 };
 
+const DEFAULT_POST_CARE = [
+  'Evite molhar a região por 24h.',
+  'Não use cremes oleosos por 48h.',
+  'Mantenha distância de calor intenso (sauna, secador) nos primeiros 2 dias.',
+];
+
 export async function finalizeAppointment(
   appointmentId: string,
   input: FinalizeInput,
@@ -214,7 +222,9 @@ export async function finalizeAppointment(
     .from('appointments')
     .update(update)
     .eq('id', appointmentId)
-    .select('client_id')
+    .select(
+      'client_id, performed_at, price, return_due_date, procedures(name), clients(full_name, email)',
+    )
     .single();
 
   if (error) return { success: false, error: error.message };
@@ -228,6 +238,35 @@ export async function finalizeAppointment(
       content: input.final_note.trim(),
       created_by: profile.id,
     });
+  }
+
+  // Email pós-atendimento (apenas para 'completed' com email da cliente)
+  if (input.status === 'completed' && row) {
+    type RawProc = { name?: string };
+    type RawClient = { full_name?: string; email?: string | null };
+    const procRaw = row.procedures as RawProc | RawProc[] | null;
+    const proc = Array.isArray(procRaw) ? procRaw[0] : procRaw;
+    const clientRaw = row.clients as RawClient | RawClient[] | null;
+    const clientObj = Array.isArray(clientRaw) ? clientRaw[0] : clientRaw;
+    if (clientObj?.email) {
+      const finalPrice =
+        typeof input.final_price === 'number' && Number.isFinite(input.final_price)
+          ? input.final_price
+          : Number(row.price ?? 0);
+      const returnIso = input.return_due_date ?? row.return_due_date ?? null;
+      void sendPostAttendanceEmail({
+        to: clientObj.email,
+        clientName: clientObj.full_name ?? 'Cliente',
+        designerName: profile.fullName ?? 'Sua designer',
+        procedureName: proc?.name ?? 'Procedimento',
+        performedDate: formatDate(row.performed_at, 'long'),
+        finalPrice: formatCurrency(finalPrice),
+        returnDate: returnIso ? formatDate(returnIso, 'long') : null,
+        postCareNotes: DEFAULT_POST_CARE,
+      }).catch((err) => {
+        console.error('[finalize] Falha ao enviar email pós-atendimento:', err);
+      });
+    }
   }
 
   revalidatePath('/dashboard/agenda');

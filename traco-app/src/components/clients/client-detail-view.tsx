@@ -9,21 +9,30 @@ import {
   ClientAppointmentsSection,
 } from '@/components/appointments/client-appointments-section';
 import type { ClientLite } from '@/components/appointments/client-combobox';
+import { TabNotas } from '@/components/atendimento/tabs/tab-notas';
+import { TabReacoes } from '@/components/atendimento/tabs/tab-reacoes';
 import { PhotosSection } from '@/components/photos/photos-section';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import type { CriticalAlert } from '@/lib/anamnesis/critical-answers';
 import { formatDate, getInitials } from '@/lib/format';
-import type { AnamnesisFormRow } from '@/lib/queries/anamnesis';
+import type { AnamnesisFormRow, AnamnesisVersionRow } from '@/lib/queries/anamnesis';
 import type { AppointmentRow } from '@/lib/queries/appointments';
 import type { ClientDetail } from '@/lib/queries/clients';
 import type { PhotoWithUrl } from '@/lib/queries/photos';
 import type { ProcedureRow } from '@/lib/queries/procedures';
+import type { NoteRow } from '@/lib/queries/professional-notes';
+import type { ReactionRow } from '@/lib/queries/reactions';
 import { PHOTOTYPE_LABELS, type Phototype } from '@/lib/validations/client';
 
+import { ClientAlertsCards } from './client-alerts-cards';
+import { ClientFichaCTA } from './client-ficha-cta';
+import { ClientFichaVersionWidget } from './client-ficha-version-widget';
 import { ClientFormDialog, type EditableClient } from './client-form-dialog';
+import { ClientSkinTypeCard } from './client-skin-type-card';
 import { DeleteClientDialog } from './delete-client-dialog';
 
 type Props = {
@@ -33,7 +42,14 @@ type Props = {
   procedures: ProcedureRow[];
   anamnesisForms: AnamnesisFormRow[];
   photos: PhotoWithUrl[];
+  notes: NoteRow[];
+  reactions: ReactionRow[];
+  criticalAlerts: CriticalAlert[];
+  versions: AnamnesisVersionRow[];
+  signedForm: AnamnesisFormRow | null;
 };
+
+type TabKey = 'dados' | 'atendimentos' | 'fichas' | 'fotos' | 'reacoes' | 'notas';
 
 function phototypeLabel(value: string | null) {
   if (!value) return '—';
@@ -43,6 +59,30 @@ function phototypeLabel(value: string | null) {
   return value;
 }
 
+function fichaCTAState(forms: AnamnesisFormRow[]): {
+  show: boolean;
+  hasPending: boolean;
+  hasExpired: boolean;
+} {
+  const signed = forms.find((f) => f.status === 'signed');
+  if (signed) return { show: false, hasPending: false, hasExpired: false };
+
+  const now = Date.now();
+  const pending = forms.find(
+    (f) => f.status === 'pending' && new Date(f.expires_at).getTime() >= now,
+  );
+  const expired = forms.find(
+    (f) =>
+      f.status === 'expired' ||
+      (f.status === 'pending' && new Date(f.expires_at).getTime() < now),
+  );
+  return {
+    show: true,
+    hasPending: Boolean(pending),
+    hasExpired: Boolean(expired),
+  };
+}
+
 export function ClientDetailView({
   client,
   appointments,
@@ -50,10 +90,16 @@ export function ClientDetailView({
   procedures,
   anamnesisForms,
   photos,
+  notes,
+  reactions,
+  criticalAlerts,
+  versions,
+  signedForm,
 }: Props) {
   const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabKey>('dados');
 
   const editable: EditableClient = {
     id: client.id,
@@ -65,6 +111,8 @@ export function ClientDetailView({
     notes: client.notes,
     tags: client.tags ?? [],
   };
+
+  const ficha = fichaCTAState(anamnesisForms);
 
   return (
     <>
@@ -102,12 +150,40 @@ export function ClientDetailView({
         </div>
       </header>
 
-      <Tabs defaultValue="dados" className="mt-2">
+      <ClientAlertsCards
+        reactions={reactions}
+        notes={notes}
+        criticalAlerts={criticalAlerts}
+        onViewReactions={() => setActiveTab('reacoes')}
+        onViewNotes={() => setActiveTab('notas')}
+      />
+
+      <Tabs
+        value={activeTab}
+        onValueChange={(v) => setActiveTab(v as TabKey)}
+        className="mt-2"
+      >
         <TabsList>
           <TabsTrigger value="dados">Dados</TabsTrigger>
           <TabsTrigger value="atendimentos">Atendimentos</TabsTrigger>
           <TabsTrigger value="fichas">Fichas</TabsTrigger>
           <TabsTrigger value="fotos">Fotos</TabsTrigger>
+          <TabsTrigger value="reacoes">
+            Reações
+            {reactions.filter((r) => r.status === 'active').length > 0 ? (
+              <span className="bg-red-500 text-white ml-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-medium">
+                {reactions.filter((r) => r.status === 'active').length}
+              </span>
+            ) : null}
+          </TabsTrigger>
+          <TabsTrigger value="notas">
+            Notas
+            {notes.filter((n) => n.pinned).length > 0 ? (
+              <span className="bg-[var(--gold)] text-ink ml-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-medium">
+                {notes.filter((n) => n.pinned).length}
+              </span>
+            ) : null}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="dados" className="mt-6">
@@ -137,6 +213,18 @@ export function ClientDetailView({
                 <Field label="Email" value={client.email ?? '—'} />
               </CardContent>
             </Card>
+
+            <ClientSkinTypeCard
+              clientId={client.id}
+              current={client.skin_phototype}
+            />
+
+            {versions.length > 0 ? (
+              <ClientFichaVersionWidget
+                versions={versions}
+                pdfUrl={signedForm?.pdf_url ?? null}
+              />
+            ) : null}
 
             <Card
               variant="premium"
@@ -194,7 +282,14 @@ export function ClientDetailView({
           />
         </TabsContent>
 
-        <TabsContent value="fichas" className="mt-6">
+        <TabsContent value="fichas" className="mt-6 flex flex-col gap-4">
+          {ficha.show ? (
+            <ClientFichaCTA
+              client={{ id: client.id, full_name: client.full_name, email: client.email }}
+              hasPending={ficha.hasPending}
+              hasExpired={ficha.hasExpired}
+            />
+          ) : null}
           <AnamnesisSection
             client={{ id: client.id, full_name: client.full_name, email: client.email }}
             forms={anamnesisForms}
@@ -203,6 +298,18 @@ export function ClientDetailView({
 
         <TabsContent value="fotos" className="mt-6">
           <PhotosSection clientId={client.id} photos={photos} procedures={procedures} />
+        </TabsContent>
+
+        <TabsContent value="reacoes" className="mt-6">
+          <TabReacoes
+            clientId={client.id}
+            appointmentId={null}
+            reactions={reactions}
+          />
+        </TabsContent>
+
+        <TabsContent value="notas" className="mt-6">
+          <TabNotas clientId={client.id} appointmentId={null} notes={notes} />
         </TabsContent>
       </Tabs>
 

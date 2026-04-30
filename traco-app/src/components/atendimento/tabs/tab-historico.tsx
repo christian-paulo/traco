@@ -41,7 +41,7 @@ export function TabHistorico({ pastAppointments }: Props) {
             <CalendarOff className="size-8 text-[var(--gold)]" strokeWidth={1.25} />
           </div>
           <p className="font-serif text-lg italic text-muted-foreground">
-            Esta é a primeira visita desta cliente.
+            Primeiro atendimento — vamos criar história hoje.
           </p>
         </CardContent>
       </Card>

@@ -1,6 +1,6 @@
 'use client';
 
-import { Play } from 'lucide-react';
+import { AlertTriangle, Play } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo } from 'react';
 
@@ -18,6 +18,7 @@ export type AgendaAppointment = {
   scheduled_end_at: string;
   status: string;
   price: number;
+  has_active_reaction: boolean;
 };
 
 type Props = {
@@ -150,8 +151,17 @@ export function AgendaDayView({ date, appointments, workingHours }: Props) {
                     href={`/dashboard/clientes/${apt.client_id}`}
                     className="flex h-full flex-col gap-0.5 overflow-hidden px-2 py-1.5 text-xs"
                   >
-                    <span className="truncate font-medium text-foreground">
-                      {apt.client_name}
+                    <span className="flex items-center gap-1 truncate font-medium text-foreground">
+                      {apt.has_active_reaction ? (
+                        <span
+                          className="inline-flex size-3.5 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600"
+                          title={`${apt.client_name} tem reação ativa — revisar antes do atendimento`}
+                          aria-label="Cliente com reação ativa"
+                        >
+                          <AlertTriangle className="size-2.5" strokeWidth={2.5} />
+                        </span>
+                      ) : null}
+                      <span className="truncate">{apt.client_name}</span>
                     </span>
                     <span className="truncate text-[10px] uppercase tracking-[0.1em] text-muted-foreground">
                       {minToLabel(startMin)} – {minToLabel(endMin)} · {apt.procedure_name}

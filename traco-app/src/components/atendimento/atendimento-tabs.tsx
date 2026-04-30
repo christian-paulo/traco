@@ -38,6 +38,8 @@ const TABS: TabDef[] = [
   { key: 'notas', label: 'Notas', icon: StickyNote },
 ];
 
+export const TAB_KEYS: readonly TabKey[] = TABS.map((t) => t.key);
+
 type Props = {
   active: TabKey;
   onChange: (next: TabKey) => void;

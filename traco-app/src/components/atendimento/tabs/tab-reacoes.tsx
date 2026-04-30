@@ -4,6 +4,7 @@ import { AlertTriangle, CheckCircle2, Eye, MoreVertical, Plus, Trash2 } from 'lu
 import { useState, useTransition } from 'react';
 import { toast } from 'sonner';
 
+import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -22,7 +23,7 @@ import { ReactionFormDialog } from './reaction-form-dialog';
 
 type Props = {
   clientId: string;
-  appointmentId: string;
+  appointmentId: string | null;
   reactions: ReactionRow[];
 };
 
@@ -69,7 +70,8 @@ export function TabReacoes({ clientId, appointmentId, reactions }: Props) {
               <CheckCircle2 className="size-8 text-emerald-600" strokeWidth={1.25} />
             </div>
             <p className="font-serif text-lg italic text-muted-foreground">
-              Nenhuma reação registrada para esta cliente.
+              Nenhuma reação registrada — sinal de bom trabalho{' '}
+              <span aria-hidden>🤍</span>
             </p>
             <Button variant="premium" size="xl" onClick={() => setOpenForm(true)}>
               <Plus className="size-4" />
@@ -117,6 +119,8 @@ export function TabReacoes({ clientId, appointmentId, reactions }: Props) {
 
 function ReactionCard({ reaction }: { reaction: ReactionRow }) {
   const [pending, startTransition] = useTransition();
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmResolve, setConfirmResolve] = useState(false);
   const typeMeta = TYPE_META[reaction.reaction_type];
   const statusMeta = STATUS_META[reaction.status];
 
@@ -128,12 +132,16 @@ function ReactionCard({ reaction }: { reaction: ReactionRow }) {
     });
   }
 
-  function handleDelete() {
-    startTransition(async () => {
-      const result = await deleteReaction(reaction.id);
-      if (result.success) toast.success('Reação excluída.');
-      else toast.error(result.error || 'Erro ao excluir.');
-    });
+  async function doDelete() {
+    const result = await deleteReaction(reaction.id);
+    if (result.success) toast.success('Reação excluída.');
+    else throw new Error(result.error || 'Erro ao excluir.');
+  }
+
+  async function doResolve() {
+    const result = await updateReactionStatus(reaction.id, 'resolved');
+    if (result.success) toast.success('Reação marcada como resolvida.');
+    else throw new Error(result.error || 'Erro ao atualizar.');
   }
 
   return (
@@ -192,7 +200,7 @@ function ReactionCard({ reaction }: { reaction: ReactionRow }) {
               ) : null}
               {reaction.status !== 'resolved' ? (
                 <DropdownMenuItem
-                  onClick={() => changeStatus('resolved')}
+                  onClick={() => setConfirmResolve(true)}
                   disabled={pending}
                 >
                   <CheckCircle2 className="size-4" />
@@ -201,7 +209,7 @@ function ReactionCard({ reaction }: { reaction: ReactionRow }) {
               ) : null}
               <DropdownMenuItem
                 variant="destructive"
-                onClick={handleDelete}
+                onClick={() => setConfirmDelete(true)}
                 disabled={pending}
               >
                 <Trash2 className="size-4" />
@@ -235,6 +243,26 @@ function ReactionCard({ reaction }: { reaction: ReactionRow }) {
             </div>
           ) : null}
         </div>
+
+        <ConfirmDialog
+          open={confirmDelete}
+          onOpenChange={setConfirmDelete}
+          title="Excluir reação?"
+          description="Este registro será removido permanentemente. Considere marcar como resolvida em vez de excluir, pra manter o histórico clínico."
+          confirmLabel="Excluir mesmo assim"
+          icon={Trash2}
+          onConfirm={doDelete}
+        />
+        <ConfirmDialog
+          open={confirmResolve}
+          onOpenChange={setConfirmResolve}
+          title="Marcar como resolvida?"
+          description="Esta reação não aparecerá mais nos alertas de atendimento. Você pode reverter o status depois."
+          confirmLabel="Sim, marcar resolvida"
+          variant="premium"
+          icon={CheckCircle2}
+          onConfirm={doResolve}
+        />
       </CardContent>
     </Card>
   );

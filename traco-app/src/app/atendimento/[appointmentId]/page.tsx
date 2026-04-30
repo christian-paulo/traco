@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 
+import { AlertaInicialDialog } from '@/components/atendimento/alerta-inicial-dialog';
 import { AtendimentoLayout } from '@/components/atendimento/atendimento-layout';
 import { detectCriticalAlerts } from '@/lib/anamnesis/critical-answers';
 import {
@@ -110,7 +111,14 @@ export default async function AtendimentoPage({ params }: { params: Params }) {
   const proc = Array.isArray(procRaw) ? procRaw[0] : procRaw;
 
   return (
-    <AtendimentoLayout
+    <>
+      <AlertaInicialDialog
+        appointmentId={appointmentId}
+        clientName={client.full_name}
+        reactions={reactions}
+        criticalAlerts={alerts}
+      />
+      <AtendimentoLayout
       appointment={{
         id: appointment.id,
         client_id: appointment.client_id,
@@ -161,5 +169,6 @@ export default async function AtendimentoPage({ params }: { params: Params }) {
       procedures={procedures}
       favoriteProducts={favoriteProducts}
     />
+    </>
   );
 }

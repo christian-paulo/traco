@@ -23,7 +23,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { formatRelativeDate, getInitials } from '@/lib/format';
-import type { ClientWithLastVisit } from '@/lib/queries/clients';
+import type { ClientWithLastVisit, FichaStatus } from '@/lib/queries/clients';
+import { cn } from '@/lib/utils';
 
 import {
   ClientFormDialog,
@@ -33,6 +34,25 @@ import { DeleteClientDialog } from './delete-client-dialog';
 
 type Props = {
   clients: ClientWithLastVisit[];
+};
+
+const FICHA_BADGE: Record<FichaStatus, { label: string; cls: string }> = {
+  none: {
+    label: 'Sem ficha',
+    cls: 'border-muted-foreground/30 bg-muted text-muted-foreground',
+  },
+  pending: {
+    label: 'Ficha pendente',
+    cls: 'border-amber-300 bg-amber-50 text-amber-800',
+  },
+  expired: {
+    label: 'Ficha vencida',
+    cls: 'border-red-300 bg-red-50 text-red-700',
+  },
+  signed: {
+    label: 'Ficha OK',
+    cls: 'border-emerald-300 bg-emerald-50 text-emerald-700',
+  },
 };
 
 export function ClientsTable({ clients }: Props) {
@@ -49,6 +69,7 @@ export function ClientsTable({ clients }: Props) {
             <TableHead>Nome</TableHead>
             <TableHead>Telefone</TableHead>
             <TableHead>Última visita</TableHead>
+            <TableHead>Ficha</TableHead>
             <TableHead>Tags</TableHead>
             <TableHead className="w-12" />
           </TableRow>
@@ -79,6 +100,17 @@ export function ClientsTable({ clients }: Props) {
               <TableCell className="text-muted-foreground">{client.phone}</TableCell>
               <TableCell className="text-muted-foreground">
                 {formatRelativeDate(client.last_visit_at)}
+              </TableCell>
+              <TableCell>
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    'text-[10px] uppercase tracking-[0.1em]',
+                    FICHA_BADGE[client.ficha_status].cls,
+                  )}
+                >
+                  {FICHA_BADGE[client.ficha_status].label}
+                </Badge>
               </TableCell>
               <TableCell>
                 <div className="flex flex-wrap gap-1">

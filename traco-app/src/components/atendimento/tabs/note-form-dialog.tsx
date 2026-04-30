@@ -22,7 +22,7 @@ type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   clientId: string;
-  appointmentId: string;
+  appointmentId: string | null;
 };
 
 export function NoteFormDialog({ open, onOpenChange, clientId, appointmentId }: Props) {
