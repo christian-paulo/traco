@@ -1,5 +1,6 @@
 'use client';
 
+import { Play } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo } from 'react';
 
@@ -130,12 +131,12 @@ export function AgendaDayView({ date, appointments, workingHours }: Props) {
             {appointments.map((apt) => {
               const { top, height, startMin, endMin } = appointmentRect(apt);
               const isCancelled = apt.status === 'cancelled' || apt.status === 'no_show';
+              const canStart = !isCancelled && apt.status !== 'completed';
               return (
-                <Link
+                <div
                   key={apt.id}
-                  href={`/dashboard/clientes/${apt.client_id}`}
                   className={cn(
-                    'absolute left-2 right-2 flex flex-col gap-0.5 overflow-hidden rounded-md px-2 py-1.5 text-xs shadow-sm transition-shadow hover:shadow-md',
+                    'group/apt absolute left-2 right-2 overflow-hidden rounded-md shadow-sm transition-shadow hover:shadow-md',
                     isCancelled && 'opacity-50',
                   )}
                   style={{
@@ -145,16 +146,31 @@ export function AgendaDayView({ date, appointments, workingHours }: Props) {
                     borderLeft: `3px solid ${apt.procedure_color}`,
                   }}
                 >
-                  <span className="truncate font-medium text-foreground">
-                    {apt.client_name}
-                  </span>
-                  <span className="truncate text-[10px] uppercase tracking-[0.1em] text-muted-foreground">
-                    {minToLabel(startMin)} – {minToLabel(endMin)} · {apt.procedure_name}
-                  </span>
-                  <span className="text-[10px] text-foreground/80">
-                    {formatCurrency(apt.price)}
-                  </span>
-                </Link>
+                  <Link
+                    href={`/dashboard/clientes/${apt.client_id}`}
+                    className="flex h-full flex-col gap-0.5 overflow-hidden px-2 py-1.5 text-xs"
+                  >
+                    <span className="truncate font-medium text-foreground">
+                      {apt.client_name}
+                    </span>
+                    <span className="truncate text-[10px] uppercase tracking-[0.1em] text-muted-foreground">
+                      {minToLabel(startMin)} – {minToLabel(endMin)} · {apt.procedure_name}
+                    </span>
+                    <span className="text-[10px] text-foreground/80">
+                      {formatCurrency(apt.price)}
+                    </span>
+                  </Link>
+                  {canStart ? (
+                    <Link
+                      href={`/atendimento/${apt.id}`}
+                      className="absolute bottom-1.5 right-1.5 inline-flex items-center gap-1 rounded-full bg-[var(--gold)] px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.12em] text-ink shadow-sm transition-all hover:scale-105 hover:shadow-md"
+                      aria-label="Iniciar atendimento"
+                    >
+                      <Play className="size-3 fill-current" />
+                      Iniciar
+                    </Link>
+                  ) : null}
+                </div>
               );
             })}
           </div>

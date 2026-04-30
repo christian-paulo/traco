@@ -1,0 +1,241 @@
+'use client';
+
+import { AlertTriangle, CheckCircle2, Eye, MoreVertical, Plus, Trash2 } from 'lucide-react';
+import { useState, useTransition } from 'react';
+import { toast } from 'sonner';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { formatDate } from '@/lib/format';
+import type { ReactionRow, ReactionStatus, ReactionType } from '@/lib/queries/reactions';
+import { cn } from '@/lib/utils';
+import { deleteReaction, updateReactionStatus } from '@/server/actions/reactions';
+
+import { ReactionFormDialog } from './reaction-form-dialog';
+
+type Props = {
+  clientId: string;
+  appointmentId: string;
+  reactions: ReactionRow[];
+};
+
+const TYPE_META: Record<ReactionType, { label: string; cls: string }> = {
+  allergy: { label: 'Alergia', cls: 'border-red-300 bg-red-50 text-red-800' },
+  irritation: { label: 'Irritação', cls: 'border-orange-300 bg-orange-50 text-orange-800' },
+  hypersensitivity: {
+    label: 'Hipersensibilidade',
+    cls: 'border-amber-300 bg-amber-50 text-amber-800',
+  },
+  positive_excellent: {
+    label: 'Excelente resultado',
+    cls: 'border-emerald-300 bg-emerald-50 text-emerald-800',
+  },
+  below_expected: {
+    label: 'Abaixo do esperado',
+    cls: 'border-slate-300 bg-slate-50 text-slate-700',
+  },
+  other: { label: 'Outro', cls: 'border-muted bg-muted text-muted-foreground' },
+};
+
+const STATUS_META: Record<ReactionStatus, { label: string; cls: string }> = {
+  active: { label: 'Ativa', cls: 'border-red-400 bg-red-100 text-red-800' },
+  observation: { label: 'Em observação', cls: 'border-amber-400 bg-amber-100 text-amber-800' },
+  resolved: { label: 'Resolvida', cls: 'border-emerald-400 bg-emerald-100 text-emerald-800' },
+};
+
+const WHEN_LABEL: Record<string, string> = {
+  during: 'Durante',
+  immediately_after: 'Logo após',
+  '24_72h_after': '24-72h depois',
+  late_1week_plus: 'Tardia (1 semana+)',
+};
+
+export function TabReacoes({ clientId, appointmentId, reactions }: Props) {
+  const [openForm, setOpenForm] = useState(false);
+
+  if (reactions.length === 0) {
+    return (
+      <>
+        <Card variant="premium" className="bg-card border-0 ring-1 ring-[var(--border)] py-12">
+          <CardContent className="flex flex-col items-center gap-4 text-center">
+            <div className="flex size-16 items-center justify-center rounded-full bg-emerald-100">
+              <CheckCircle2 className="size-8 text-emerald-600" strokeWidth={1.25} />
+            </div>
+            <p className="font-serif text-lg italic text-muted-foreground">
+              Nenhuma reação registrada para esta cliente.
+            </p>
+            <Button variant="premium" size="xl" onClick={() => setOpenForm(true)}>
+              <Plus className="size-4" />
+              Registrar reação
+            </Button>
+          </CardContent>
+        </Card>
+        <ReactionFormDialog
+          open={openForm}
+          onOpenChange={setOpenForm}
+          clientId={clientId}
+          appointmentId={appointmentId}
+        />
+      </>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+          {reactions.length} {reactions.length === 1 ? 'registro' : 'registros'}
+        </p>
+        <Button variant="outline-gold" size="sm" onClick={() => setOpenForm(true)}>
+          <Plus className="size-4" />
+          Nova reação
+        </Button>
+      </div>
+
+      <div className="flex flex-col gap-3">
+        {reactions.map((r) => (
+          <ReactionCard key={r.id} reaction={r} />
+        ))}
+      </div>
+
+      <ReactionFormDialog
+        open={openForm}
+        onOpenChange={setOpenForm}
+        clientId={clientId}
+        appointmentId={appointmentId}
+      />
+    </div>
+  );
+}
+
+function ReactionCard({ reaction }: { reaction: ReactionRow }) {
+  const [pending, startTransition] = useTransition();
+  const typeMeta = TYPE_META[reaction.reaction_type];
+  const statusMeta = STATUS_META[reaction.status];
+
+  function changeStatus(next: ReactionStatus) {
+    startTransition(async () => {
+      const result = await updateReactionStatus(reaction.id, next);
+      if (result.success) toast.success('Status atualizado.');
+      else toast.error(result.error || 'Erro ao atualizar.');
+    });
+  }
+
+  function handleDelete() {
+    startTransition(async () => {
+      const result = await deleteReaction(reaction.id);
+      if (result.success) toast.success('Reação excluída.');
+      else toast.error(result.error || 'Erro ao excluir.');
+    });
+  }
+
+  return (
+    <Card
+      variant="premium"
+      className={cn(
+        'bg-card border-0 ring-1',
+        reaction.status === 'active' ? 'ring-red-300' : 'ring-[var(--border)]',
+      )}
+    >
+      <CardContent className="flex flex-col gap-3 px-5 py-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex flex-col gap-1.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="outline" className={typeMeta.cls}>
+                {reaction.reaction_type === 'allergy' ||
+                reaction.reaction_type === 'irritation' ? (
+                  <AlertTriangle className="size-3" />
+                ) : null}
+                {typeMeta.label}
+              </Badge>
+              <Badge variant="outline" className={statusMeta.cls}>
+                {statusMeta.label}
+              </Badge>
+              <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+                {WHEN_LABEL[reaction.occurred_when] ?? reaction.occurred_when}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Registrada em {formatDate(reaction.recorded_at, 'short')}
+            </p>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button variant="ghost" size="icon" className="size-8" aria-label="Ações">
+                  <MoreVertical className="size-4" />
+                </Button>
+              }
+            />
+            <DropdownMenuContent align="end" className="w-48">
+              {reaction.status !== 'active' ? (
+                <DropdownMenuItem onClick={() => changeStatus('active')} disabled={pending}>
+                  <AlertTriangle className="size-4" />
+                  Marcar como ativa
+                </DropdownMenuItem>
+              ) : null}
+              {reaction.status !== 'observation' ? (
+                <DropdownMenuItem
+                  onClick={() => changeStatus('observation')}
+                  disabled={pending}
+                >
+                  <Eye className="size-4" />
+                  Em observação
+                </DropdownMenuItem>
+              ) : null}
+              {reaction.status !== 'resolved' ? (
+                <DropdownMenuItem
+                  onClick={() => changeStatus('resolved')}
+                  disabled={pending}
+                >
+                  <CheckCircle2 className="size-4" />
+                  Marcar como resolvida
+                </DropdownMenuItem>
+              ) : null}
+              <DropdownMenuItem
+                variant="destructive"
+                onClick={handleDelete}
+                disabled={pending}
+              >
+                <Trash2 className="size-4" />
+                Excluir
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        <div className="flex flex-col gap-2 text-sm">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+              Sintomas
+            </p>
+            <p className="text-foreground">{reaction.symptoms}</p>
+          </div>
+          {reaction.treatment ? (
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+                Tratamento aplicado
+              </p>
+              <p className="text-foreground">{reaction.treatment}</p>
+            </div>
+          ) : null}
+          {reaction.notes ? (
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+                Observações
+              </p>
+              <p className="text-foreground">{reaction.notes}</p>
+            </div>
+          ) : null}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}

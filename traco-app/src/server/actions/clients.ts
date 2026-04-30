@@ -203,3 +203,22 @@ export async function sendBulkRecoveryEmails(
   }
   return { success: true, sent, failed, errors };
 }
+
+const PHOTOTYPES = ['I', 'II', 'III', 'IV', 'V', 'VI'] as const;
+
+export async function updateClientSkinType(
+  clientId: string,
+  skinPhototype: string | null,
+): Promise<SimpleResult> {
+  if (skinPhototype !== null && !(PHOTOTYPES as readonly string[]).includes(skinPhototype)) {
+    return { success: false, error: 'Fototipo inválido.' };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('clients')
+    .update({ skin_phototype: skinPhototype })
+    .eq('id', clientId);
+  if (error) return { success: false, error: error.message };
+  revalidatePath(`/dashboard/clientes/${clientId}`);
+  return { success: true };
+}

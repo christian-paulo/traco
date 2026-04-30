@@ -182,3 +182,57 @@ export async function getAppointment(id: string) {
     .maybeSingle();
   return data;
 }
+
+type FinalizeInput = {
+  status: 'completed' | 'cancelled' | 'no_show';
+  final_price?: number;
+  return_due_date?: string | null;
+  final_note?: string;
+};
+
+export async function finalizeAppointment(
+  appointmentId: string,
+  input: FinalizeInput,
+): Promise<SimpleResult> {
+  const profile = await getCurrentProfile();
+  if (!profile) return { success: false, error: 'Sessão expirada.' };
+  const supabase = await createClient();
+
+  const update: {
+    status: 'completed' | 'cancelled' | 'no_show';
+    price?: number;
+    return_due_date?: string | null;
+  } = { status: input.status };
+  if (typeof input.final_price === 'number' && Number.isFinite(input.final_price)) {
+    update.price = input.final_price;
+  }
+  if (input.return_due_date !== undefined) {
+    update.return_due_date = input.return_due_date;
+  }
+
+  const { data: row, error } = await supabase
+    .from('appointments')
+    .update(update)
+    .eq('id', appointmentId)
+    .select('client_id')
+    .single();
+
+  if (error) return { success: false, error: error.message };
+
+  if (input.final_note && input.final_note.trim().length > 0 && row?.client_id) {
+    await supabase.from('professional_notes').insert({
+      tenant_id: profile.tenantId,
+      client_id: row.client_id,
+      appointment_id: appointmentId,
+      title: 'Observação ao finalizar atendimento',
+      content: input.final_note.trim(),
+      created_by: profile.id,
+    });
+  }
+
+  revalidatePath('/dashboard/agenda');
+  revalidatePath('/dashboard/atendimentos');
+  revalidatePath('/dashboard');
+  if (row?.client_id) revalidatePath(`/dashboard/clientes/${row.client_id}`);
+  return { success: true };
+}
