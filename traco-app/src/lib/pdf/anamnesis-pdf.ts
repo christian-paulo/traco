@@ -14,10 +14,21 @@ const MARGIN = 50;
 
 type AnamnesisField = {
   id: string;
-  type: 'text' | 'textarea' | 'date' | 'boolean' | 'select';
+  type:
+    | 'text'
+    | 'textarea'
+    | 'date'
+    | 'boolean'
+    | 'select'
+    | 'section'
+    | 'phone'
+    | 'cpf'
+    | 'boolean_with_text'
+    | 'term_acceptance';
   label: string;
   options?: string[];
   required?: boolean;
+  subtitle?: string;
 };
 
 type Args = {
@@ -82,6 +93,14 @@ function formatAnswer(field: AnamnesisField, raw: unknown): string {
       return 'Não';
     }
     return String(raw);
+  }
+  if (field.type === 'boolean_with_text' && typeof raw === 'object' && raw !== null) {
+    const obj = raw as { value?: boolean; text?: string };
+    const yn = obj.value ? 'Sim' : 'Não';
+    return obj.value && obj.text ? `${yn} — ${obj.text}` : yn;
+  }
+  if (field.type === 'term_acceptance') {
+    return raw === true ? 'Aceito o termo de responsabilidade' : 'Não aceito';
   }
   if (field.type === 'date' && typeof raw === 'string') {
     return formatBirthDate(raw);
@@ -267,6 +286,21 @@ export async function generateAnamnesisPDF({
   for (const field of template.fields) {
     if (y < MARGIN + 130) {
       addPageBreak();
+    }
+    if (field.type === 'section') {
+      // Renderiza separador de seção
+      y -= 4;
+      page.drawText(field.label.toUpperCase(), {
+        x: MARGIN,
+        y,
+        size: 9,
+        font: helveticaBold,
+        color: GOLD,
+      });
+      y -= 8;
+      page.drawRectangle({ x: MARGIN, y, width: 24, height: 1, color: GOLD });
+      y -= 14;
+      continue;
     }
     page.drawText(field.label, {
       x: MARGIN,

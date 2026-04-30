@@ -230,17 +230,55 @@ export async function submitAnamnesisForm(input: SubmitInput): Promise<SubmitRes
     )
     .digest('hex');
 
-  // Atualiza form
-  const { error: updateError } = await admin
-    .from('anamnesis_forms')
-    .update({
-      status: 'signed',
+  // Cria versão 1 (original, IMUTÁVEL pelo trigger no banco)
+  const { data: versionRow, error: versionError } = await admin
+    .from('anamnesis_form_versions')
+    .insert({
+      tenant_id: form.tenant_id,
+      form_id: form.id,
+      version_number: 1,
+      is_original: true,
       answers: input.answers as Json,
       signature_png: input.signature_png,
       signed_at: signedAt,
       signer_ip: ip,
       integrity_hash: integrityHash,
     })
+    .select('id')
+    .maybeSingle();
+
+  // Se a tabela ainda não existe (migração 04 não aplicada), seguimos sem versão
+  // pra não quebrar fluxo já em produção. Logamos pra ficar visível.
+  if (versionError) {
+    console.warn(
+      '[submitAnamnesisForm] Falha ao gravar versão (migração 04 aplicada?):',
+      versionError.message,
+    );
+  }
+
+  // Atualiza form mantendo compatibilidade com colunas legadas + aponta versão atual
+  const updatePayload: {
+    status: string;
+    answers: Json;
+    signature_png: string;
+    signed_at: string;
+    signer_ip: string | null;
+    integrity_hash: string;
+    current_version_id?: string | null;
+  } = {
+    status: 'signed',
+    answers: input.answers as Json,
+    signature_png: input.signature_png,
+    signed_at: signedAt,
+    signer_ip: ip,
+    integrity_hash: integrityHash,
+  };
+  if (versionRow?.id) {
+    updatePayload.current_version_id = versionRow.id;
+  }
+  const { error: updateError } = await admin
+    .from('anamnesis_forms')
+    .update(updatePayload)
     .eq('id', form.id);
 
   if (updateError) {

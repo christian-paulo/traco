@@ -19,6 +19,8 @@ export type Database = {
           answers: Json | null
           client_id: string
           created_at: string
+          current_version_id: string | null
+          edit_count: number
           expires_at: string
           id: string
           integrity_hash: string | null
@@ -36,6 +38,8 @@ export type Database = {
           answers?: Json | null
           client_id: string
           created_at?: string
+          current_version_id?: string | null
+          edit_count?: number
           expires_at?: string
           id?: string
           integrity_hash?: string | null
@@ -53,6 +57,8 @@ export type Database = {
           answers?: Json | null
           client_id?: string
           created_at?: string
+          current_version_id?: string | null
+          edit_count?: number
           expires_at?: string
           id?: string
           integrity_hash?: string | null
@@ -700,6 +706,156 @@ export type Database = {
           updated_at?: string
         }
         Update: Partial<Database['public']['Tables']['waitlist_entries']['Insert']>
+        Relationships: []
+      }
+      anamnesis_form_versions: {
+        Row: {
+          id: string
+          tenant_id: string
+          form_id: string
+          version_number: number
+          is_original: boolean
+          edit_reason: string | null
+          edited_by: string | null
+          answers: Json
+          signature_png: string | null
+          signed_at: string | null
+          signer_ip: string | null
+          integrity_hash: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          tenant_id: string
+          form_id: string
+          version_number: number
+          is_original?: boolean
+          edit_reason?: string | null
+          edited_by?: string | null
+          answers: Json
+          signature_png?: string | null
+          signed_at?: string | null
+          signer_ip?: string | null
+          integrity_hash: string
+          created_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['anamnesis_form_versions']['Insert']>
+        Relationships: []
+      }
+      client_reactions: {
+        Row: {
+          id: string
+          tenant_id: string
+          client_id: string
+          appointment_id: string | null
+          reaction_type: string
+          occurred_when: string
+          symptoms: string
+          treatment: string | null
+          status: string
+          photo_urls: string[]
+          notes: string | null
+          recorded_at: string
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          tenant_id: string
+          client_id: string
+          appointment_id?: string | null
+          reaction_type: string
+          occurred_when: string
+          symptoms: string
+          treatment?: string | null
+          status?: string
+          photo_urls?: string[]
+          notes?: string | null
+          recorded_at?: string
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['client_reactions']['Insert']>
+        Relationships: []
+      }
+      appointment_procedures: {
+        Row: {
+          id: string
+          tenant_id: string
+          appointment_id: string
+          products_used: Json
+          step_times: Json
+          technique: string | null
+          technical_notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          tenant_id: string
+          appointment_id: string
+          products_used?: Json
+          step_times?: Json
+          technique?: string | null
+          technical_notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['appointment_procedures']['Insert']>
+        Relationships: []
+      }
+      favorite_products: {
+        Row: {
+          id: string
+          tenant_id: string
+          brand: string
+          product: string
+          category: string | null
+          default_step_time: number | null
+          use_count: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          tenant_id: string
+          brand: string
+          product: string
+          category?: string | null
+          default_step_time?: number | null
+          use_count?: number
+          created_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['favorite_products']['Insert']>
+        Relationships: []
+      }
+      professional_notes: {
+        Row: {
+          id: string
+          tenant_id: string
+          client_id: string
+          appointment_id: string | null
+          title: string
+          content: string
+          pinned: boolean
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          tenant_id: string
+          client_id: string
+          appointment_id?: string | null
+          title: string
+          content: string
+          pinned?: boolean
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['professional_notes']['Insert']>
         Relationships: []
       }
     }

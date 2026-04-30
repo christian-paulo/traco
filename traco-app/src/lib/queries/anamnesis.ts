@@ -5,10 +5,27 @@ import { createClient } from '@/lib/supabase/server';
 
 export type AnamnesisField = {
   id: string;
-  type: 'text' | 'textarea' | 'date' | 'boolean' | 'select';
+  type:
+    | 'text'
+    | 'textarea'
+    | 'date'
+    | 'boolean'
+    | 'select'
+    | 'section'
+    | 'phone'
+    | 'cpf'
+    | 'boolean_with_text'
+    | 'term_acceptance';
   label: string;
   options?: string[];
   required?: boolean;
+  subtitle?: string;
+  rows?: number;
+  prefilled_from?: 'client.full_name' | 'client.phone' | 'client.email' | 'client.birth_date';
+  help?: string;
+  text_label?: string;
+  term_text?: string;
+  validation?: 'cpf' | 'phone';
 };
 
 export type AnamnesisFormRow = {
@@ -73,7 +90,12 @@ export type PublicFichaPayload = {
     signed_at: string | null;
     pdf_url: string | null;
   };
-  client: { full_name: string; email: string | null };
+  client: {
+    full_name: string;
+    email: string | null;
+    phone: string | null;
+    birth_date: string | null;
+  };
   template: { id: string; name: string; fields: AnamnesisField[] };
   designer: { full_name: string };
 };
@@ -92,7 +114,11 @@ export async function getPublicFichaByToken(token: string): Promise<PublicFichaP
   if (error || !form) return null;
 
   const [{ data: client }, { data: template }, { data: profile }] = await Promise.all([
-    supabase.from('clients').select('full_name, email').eq('id', form.client_id).maybeSingle(),
+    supabase
+      .from('clients')
+      .select('full_name, email, phone, birth_date')
+      .eq('id', form.client_id)
+      .maybeSingle(),
     supabase
       .from('anamnesis_templates')
       .select('id, name, fields')
@@ -114,7 +140,12 @@ export async function getPublicFichaByToken(token: string): Promise<PublicFichaP
       signed_at: form.signed_at,
       pdf_url: form.pdf_url,
     },
-    client: { full_name: client.full_name, email: client.email },
+    client: {
+      full_name: client.full_name,
+      email: client.email,
+      phone: client.phone ?? null,
+      birth_date: client.birth_date ?? null,
+    },
     template: template as { id: string; name: string; fields: AnamnesisField[] },
     designer: { full_name: profile?.full_name ?? 'sua designer' },
   };

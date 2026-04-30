@@ -2,34 +2,69 @@
 
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useRef, useState, useTransition } from 'react';
+import { useMemo, useRef, useState, useTransition } from 'react';
 import SignatureCanvas from 'react-signature-canvas';
 import { toast } from 'sonner';
 
-import { cn } from '@/lib/utils';
+import { FieldBoolean } from '@/components/anamnesis/fields/field-boolean';
+import {
+  FieldBooleanWithText,
+  type BooleanWithText,
+} from '@/components/anamnesis/fields/field-boolean-with-text';
+import { FieldCPF } from '@/components/anamnesis/fields/field-cpf';
+import { FieldDate } from '@/components/anamnesis/fields/field-date';
+import { FieldPhone } from '@/components/anamnesis/fields/field-phone';
+import { FieldSection } from '@/components/anamnesis/fields/field-section';
+import { FieldSelect } from '@/components/anamnesis/fields/field-select';
+import { FieldTermAcceptance } from '@/components/anamnesis/fields/field-term-acceptance';
+import { FieldText } from '@/components/anamnesis/fields/field-text';
+import { FieldTextarea } from '@/components/anamnesis/fields/field-textarea';
+import { buildAnamnesisSchema } from '@/lib/anamnesis/build-zod-schema';
+import type {
+  AnamnesisAnswers,
+  FieldValue,
+  TemplateField,
+} from '@/lib/anamnesis/template-types';
 import { submitAnamnesisForm } from '@/server/actions/anamnesis';
-
-import type { AnamnesisField } from '@/lib/queries/anamnesis';
 
 type Props = {
   token: string;
-  fields: AnamnesisField[];
+  fields: TemplateField[];
+  initialAnswers: AnamnesisAnswers;
 };
 
-type Answers = Record<string, string | boolean>;
+function defaultFor(field: TemplateField, prefilled: AnamnesisAnswers): FieldValue {
+  const seed = prefilled[field.id];
+  if (seed !== undefined) return seed;
+  switch (field.type) {
+    case 'boolean':
+      return undefined;
+    case 'boolean_with_text':
+      return undefined;
+    case 'term_acceptance':
+      return false;
+    default:
+      return '';
+  }
+}
 
-const inputClass =
-  'w-full h-12 rounded-lg border border-[var(--gold)]/30 bg-white px-4 text-base text-foreground outline-none transition-colors focus:border-[var(--gold)] focus:ring-2 focus:ring-[var(--gold)]/30';
-
-export function FichaForm({ token, fields }: Props) {
+export function FichaForm({ token, fields, initialAnswers }: Props) {
   const router = useRouter();
-  const [answers, setAnswers] = useState<Answers>({});
+  const schema = useMemo(() => buildAnamnesisSchema(fields), [fields]);
+  const [answers, setAnswers] = useState<AnamnesisAnswers>(() => {
+    const seeded: AnamnesisAnswers = {};
+    for (const f of fields) {
+      if (f.type === 'section') continue;
+      seeded[f.id] = defaultFor(f, initialAnswers);
+    }
+    return seeded;
+  });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [signatureEmpty, setSignatureEmpty] = useState(true);
   const [isPending, startTransition] = useTransition();
   const sigRef = useRef<SignatureCanvas>(null);
 
-  function setValue(id: string, value: string | boolean) {
+  function setValue(id: string, value: FieldValue) {
     setAnswers((prev) => ({ ...prev, [id]: value }));
     if (errors[id]) {
       setErrors((prev) => {
@@ -45,24 +80,18 @@ export function FichaForm({ token, fields }: Props) {
     setSignatureEmpty(true);
   }
 
-  function validate(): boolean {
-    const next: Record<string, string> = {};
-    for (const field of fields) {
-      if (!field.required) continue;
-      const value = answers[field.id];
-      if (value === undefined || value === '' || value === null) {
-        next[field.id] = 'Campo obrigatório.';
-      }
-    }
-    setErrors(next);
-    return Object.keys(next).length === 0;
-  }
-
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
 
-    if (!validate()) {
-      toast.error('Preencha todos os campos obrigatórios.');
+    const result = schema.safeParse(answers);
+    if (!result.success) {
+      const next: Record<string, string> = {};
+      for (const issue of result.error.issues) {
+        const key = issue.path[0];
+        if (typeof key === 'string') next[key] = issue.message;
+      }
+      setErrors(next);
+      toast.error('Confira os campos destacados.');
       return;
     }
 
@@ -75,34 +104,30 @@ export function FichaForm({ token, fields }: Props) {
     const signaturePng = sig.toDataURL('image/png');
 
     startTransition(async () => {
-      const result = await submitAnamnesisForm({
+      const submitResult = await submitAnamnesisForm({
         token,
-        answers,
+        answers: answers as Record<string, unknown>,
         signature_png: signaturePng,
       });
 
-      if (result.success) {
+      if (submitResult.success) {
         router.push(`/ficha/${token}/sucesso`);
       } else {
-        toast.error(result.error || 'Não foi possível enviar.');
+        toast.error(submitResult.error || 'Não foi possível enviar.');
       }
     });
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-7">
-      {fields.map((field) => (
-        <div key={field.id} className="flex flex-col gap-2">
-          <label htmlFor={field.id} className="font-serif text-base text-foreground">
-            {field.label}
-            {field.required ? <span className="text-destructive/80"> *</span> : null}
-          </label>
-          {renderControl(field, answers, setValue, isPending, inputClass)}
-          {errors[field.id] ? (
-            <p className="text-destructive text-xs">{errors[field.id]}</p>
-          ) : null}
-        </div>
-      ))}
+      {fields.map((field) => {
+        if (field.type === 'section') {
+          return <FieldSection key={field.id} field={field} />;
+        }
+        const error = errors[field.id];
+        const value = answers[field.id];
+        return renderField(field, value, (next) => setValue(field.id, next), error, isPending);
+      })}
 
       <div className="bg-card flex flex-col gap-2 rounded-lg border border-[var(--gold)]/20 p-5">
         <h2 className="font-serif text-lg font-medium text-foreground">Sua assinatura</h2>
@@ -152,95 +177,115 @@ export function FichaForm({ token, fields }: Props) {
   );
 }
 
-function renderControl(
-  field: AnamnesisField,
-  answers: Answers,
-  setValue: (id: string, value: string | boolean) => void,
+function renderField(
+  field: TemplateField,
+  value: FieldValue,
+  onChange: (next: FieldValue) => void,
+  error: string | undefined,
   disabled: boolean,
-  className: string,
 ) {
-  const value = answers[field.id];
-
-  if (field.type === 'textarea') {
-    return (
-      <textarea
-        id={field.id}
-        value={(value as string) ?? ''}
-        onChange={(e) => setValue(field.id, e.target.value)}
-        disabled={disabled}
-        rows={3}
-        className={cn(
-          className,
-          'h-auto py-3 leading-relaxed',
-        )}
-      />
-    );
+  const key = field.id;
+  switch (field.type) {
+    case 'text':
+      return (
+        <FieldText
+          key={key}
+          field={field}
+          value={(value as string | undefined) ?? ''}
+          onChange={(next) => onChange(next)}
+          error={error}
+          disabled={disabled}
+        />
+      );
+    case 'textarea':
+      return (
+        <FieldTextarea
+          key={key}
+          field={field}
+          value={(value as string | undefined) ?? ''}
+          onChange={(next) => onChange(next)}
+          error={error}
+          disabled={disabled}
+        />
+      );
+    case 'date':
+      return (
+        <FieldDate
+          key={key}
+          field={field}
+          value={(value as string | undefined) ?? ''}
+          onChange={(next) => onChange(next)}
+          error={error}
+          disabled={disabled}
+        />
+      );
+    case 'phone':
+      return (
+        <FieldPhone
+          key={key}
+          field={field}
+          value={(value as string | undefined) ?? ''}
+          onChange={(next) => onChange(next)}
+          error={error}
+          disabled={disabled}
+        />
+      );
+    case 'cpf':
+      return (
+        <FieldCPF
+          key={key}
+          field={field}
+          value={(value as string | undefined) ?? ''}
+          onChange={(next) => onChange(next)}
+          error={error}
+          disabled={disabled}
+        />
+      );
+    case 'boolean':
+      return (
+        <FieldBoolean
+          key={key}
+          field={field}
+          value={value as boolean | undefined}
+          onChange={(next) => onChange(next)}
+          error={error}
+          disabled={disabled}
+        />
+      );
+    case 'boolean_with_text':
+      return (
+        <FieldBooleanWithText
+          key={key}
+          field={field}
+          value={value as BooleanWithText | undefined}
+          onChange={(next) => onChange(next)}
+          error={error}
+          disabled={disabled}
+        />
+      );
+    case 'select':
+      return (
+        <FieldSelect
+          key={key}
+          field={field}
+          value={(value as string | undefined) ?? ''}
+          onChange={(next) => onChange(next)}
+          error={error}
+          disabled={disabled}
+        />
+      );
+    case 'term_acceptance':
+      return (
+        <FieldTermAcceptance
+          key={key}
+          field={field}
+          value={Boolean(value)}
+          onChange={(next) => onChange(next)}
+          error={error}
+          disabled={disabled}
+        />
+      );
+    default:
+      return null;
   }
-
-  if (field.type === 'date') {
-    return (
-      <input
-        id={field.id}
-        type="date"
-        value={(value as string) ?? ''}
-        onChange={(e) => setValue(field.id, e.target.value)}
-        disabled={disabled}
-        className={className}
-      />
-    );
-  }
-
-  if (field.type === 'boolean') {
-    const current = value === true ? 'sim' : value === false ? 'nao' : '';
-    return (
-      <div className="grid grid-cols-2 gap-2">
-        {(['sim', 'nao'] as const).map((opt) => (
-          <button
-            key={opt}
-            type="button"
-            disabled={disabled}
-            onClick={() => setValue(field.id, opt === 'sim')}
-            className={cn(
-              'flex h-12 items-center justify-center rounded-lg border-2 text-sm font-medium uppercase tracking-[0.1em] transition-colors',
-              current === opt
-                ? 'border-[var(--gold)] bg-[var(--gold)]/15 text-foreground'
-                : 'border-[var(--gold)]/20 bg-white text-muted-foreground hover:border-[var(--gold)]/50 hover:text-foreground',
-            )}
-          >
-            {opt === 'sim' ? 'Sim' : 'Não'}
-          </button>
-        ))}
-      </div>
-    );
-  }
-
-  if (field.type === 'select') {
-    return (
-      <select
-        id={field.id}
-        value={(value as string) ?? ''}
-        onChange={(e) => setValue(field.id, e.target.value)}
-        disabled={disabled}
-        className={className}
-      >
-        <option value="">Selecione</option>
-        {(field.options ?? []).map((opt) => (
-          <option key={opt} value={opt}>
-            {opt}
-          </option>
-        ))}
-      </select>
-    );
-  }
-
-  return (
-    <input
-      id={field.id}
-      type="text"
-      value={(value as string) ?? ''}
-      onChange={(e) => setValue(field.id, e.target.value)}
-      disabled={disabled}
-      className={className}
-    />
-  );
 }

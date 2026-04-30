@@ -27,6 +27,14 @@ function formatAnswer(
     if (raw === true || raw === 'true' || raw === 'sim') return 'Sim';
     if (raw === false || raw === 'false' || raw === 'nao') return 'Não';
   }
+  if (field.type === 'boolean_with_text' && typeof raw === 'object' && raw !== null) {
+    const obj = raw as { value?: boolean; text?: string };
+    const yn = obj.value ? 'Sim' : 'Não';
+    return obj.value && obj.text ? `${yn} — ${obj.text}` : yn;
+  }
+  if (field.type === 'term_acceptance') {
+    return raw === true ? 'Aceito o termo de responsabilidade' : 'Não aceito';
+  }
   return String(raw);
 }
 
@@ -123,16 +131,28 @@ export default async function SignedFichaPage({ params }: { params: Params }) {
                 Esta ficha não possui campos.
               </p>
             ) : (
-              fields.map((field) => (
-                <div key={field.id} className="flex flex-col gap-1">
-                  <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                    {field.label}
-                  </p>
-                  <p className="text-sm text-foreground whitespace-pre-wrap">
-                    {formatAnswer(field, answers[field.id])}
-                  </p>
-                </div>
-              ))
+              fields.map((field) => {
+                if (field.type === 'section') {
+                  return (
+                    <div key={field.id} className="flex flex-col gap-1.5 pt-3">
+                      <div className="h-px w-6 bg-[var(--gold)]" />
+                      <h3 className="font-serif text-lg font-medium text-foreground">
+                        {field.label}
+                      </h3>
+                    </div>
+                  );
+                }
+                return (
+                  <div key={field.id} className="flex flex-col gap-1">
+                    <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                      {field.label}
+                    </p>
+                    <p className="text-sm text-foreground whitespace-pre-wrap">
+                      {formatAnswer(field, answers[field.id])}
+                    </p>
+                  </div>
+                );
+              })
             )}
           </div>
         </CardContent>

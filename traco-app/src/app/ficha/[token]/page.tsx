@@ -2,6 +2,7 @@ import { Clock, FileX, ShieldAlert } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
+import type { AnamnesisAnswers, TemplateField } from '@/lib/anamnesis/template-types';
 import { getFirstName } from '@/lib/format';
 import { getPublicFichaByToken } from '@/lib/queries/anamnesis';
 
@@ -126,12 +127,41 @@ export default async function FichaPublicPage({ params }: { params: Params }) {
   }
 
   const firstName = getFirstName(payload.client.full_name);
+  const fields = payload.template.fields as TemplateField[];
+  const initialAnswers = buildPrefilledAnswers(fields, payload.client);
+
   return (
     <PageShell>
       <BrandHeader
         subtitle={`Olá, ${firstName}! Antes do seu atendimento, preencha as informações abaixo.`}
       />
-      <FichaForm token={token} fields={payload.template.fields} />
+      <FichaForm token={token} fields={fields} initialAnswers={initialAnswers} />
     </PageShell>
   );
+}
+
+function buildPrefilledAnswers(
+  fields: TemplateField[],
+  client: { full_name: string; email: string | null; phone: string | null; birth_date: string | null },
+): AnamnesisAnswers {
+  const answers: AnamnesisAnswers = {};
+  for (const field of fields) {
+    if (field.type === 'section') continue;
+    if (!field.prefilled_from) continue;
+    switch (field.prefilled_from) {
+      case 'client.full_name':
+        answers[field.id] = client.full_name;
+        break;
+      case 'client.phone':
+        answers[field.id] = client.phone ?? '';
+        break;
+      case 'client.email':
+        answers[field.id] = client.email ?? '';
+        break;
+      case 'client.birth_date':
+        answers[field.id] = client.birth_date ?? '';
+        break;
+    }
+  }
+  return answers;
 }
