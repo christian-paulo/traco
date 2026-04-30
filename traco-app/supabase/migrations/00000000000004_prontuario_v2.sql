@@ -13,7 +13,7 @@
 -- =====================================================================
 
 create table if not exists public.anamnesis_form_versions (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   tenant_id uuid not null references public.tenants(id) on delete cascade,
   form_id uuid not null references public.anamnesis_forms(id) on delete cascade,
   version_number int not null,
@@ -74,7 +74,7 @@ alter table public.anamnesis_forms
 -- =====================================================================
 
 create table if not exists public.client_reactions (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   tenant_id uuid not null references public.tenants(id) on delete cascade,
   client_id uuid not null references public.clients(id) on delete cascade,
   appointment_id uuid references public.appointments(id) on delete set null,
@@ -122,7 +122,7 @@ create trigger trg_client_reactions_updated_at
 -- =====================================================================
 
 create table if not exists public.appointment_procedures (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   tenant_id uuid not null references public.tenants(id) on delete cascade,
   appointment_id uuid not null unique references public.appointments(id) on delete cascade,
 
@@ -156,7 +156,7 @@ create trigger trg_appt_procedures_updated_at
 -- =====================================================================
 
 create table if not exists public.favorite_products (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   tenant_id uuid not null references public.tenants(id) on delete cascade,
   brand text not null,
   product text not null,
@@ -183,7 +183,7 @@ create policy favorite_products_tenant_isolation on public.favorite_products
 -- =====================================================================
 
 create table if not exists public.professional_notes (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   tenant_id uuid not null references public.tenants(id) on delete cascade,
   client_id uuid not null references public.clients(id) on delete cascade,
   appointment_id uuid references public.appointments(id) on delete set null,

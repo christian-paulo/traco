@@ -12,8 +12,103 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
+      anamnesis_form_versions: {
+        Row: {
+          answers: Json
+          created_at: string
+          edit_reason: string | null
+          edited_by: string | null
+          form_id: string
+          id: string
+          integrity_hash: string
+          is_original: boolean
+          signature_png: string | null
+          signed_at: string | null
+          signer_ip: string | null
+          tenant_id: string
+          version_number: number
+        }
+        Insert: {
+          answers: Json
+          created_at?: string
+          edit_reason?: string | null
+          edited_by?: string | null
+          form_id: string
+          id?: string
+          integrity_hash: string
+          is_original?: boolean
+          signature_png?: string | null
+          signed_at?: string | null
+          signer_ip?: string | null
+          tenant_id: string
+          version_number: number
+        }
+        Update: {
+          answers?: Json
+          created_at?: string
+          edit_reason?: string | null
+          edited_by?: string | null
+          form_id?: string
+          id?: string
+          integrity_hash?: string
+          is_original?: boolean
+          signature_png?: string | null
+          signed_at?: string | null
+          signer_ip?: string | null
+          tenant_id?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "anamnesis_form_versions_edited_by_fkey"
+            columns: ["edited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "anamnesis_form_versions_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "anamnesis_forms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "anamnesis_form_versions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       anamnesis_forms: {
         Row: {
           answers: Json | null
@@ -78,6 +173,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "anamnesis_forms_current_version_id_fkey"
+            columns: ["current_version_id"]
+            isOneToOne: false
+            referencedRelation: "anamnesis_form_versions"
             referencedColumns: ["id"]
           },
           {
@@ -185,6 +287,57 @@ export type Database = {
           },
         ]
       }
+      appointment_procedures: {
+        Row: {
+          appointment_id: string
+          created_at: string
+          id: string
+          products_used: Json
+          step_times: Json
+          technical_notes: string | null
+          technique: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          appointment_id: string
+          created_at?: string
+          id?: string
+          products_used?: Json
+          step_times?: Json
+          technical_notes?: string | null
+          technique?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          appointment_id?: string
+          created_at?: string
+          id?: string
+          products_used?: Json
+          step_times?: Json
+          technical_notes?: string | null
+          technique?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointment_procedures_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: true
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointment_procedures_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       appointments: {
         Row: {
           client_id: string
@@ -256,7 +409,177 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "appointments_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "appointments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      booking_drafts: {
+        Row: {
+          client_birth_date: string | null
+          client_email: string | null
+          client_full_name: string
+          client_notes: string | null
+          client_phone: string
+          created_at: string
+          id: string
+          procedure_id: string
+          professional_id: string
+          scheduled_start_at: string
+          status: string
+          studio_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          client_birth_date?: string | null
+          client_email?: string | null
+          client_full_name: string
+          client_notes?: string | null
+          client_phone: string
+          created_at?: string
+          id?: string
+          procedure_id: string
+          professional_id: string
+          scheduled_start_at: string
+          status?: string
+          studio_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          client_birth_date?: string | null
+          client_email?: string | null
+          client_full_name?: string
+          client_notes?: string | null
+          client_phone?: string
+          created_at?: string
+          id?: string
+          procedure_id?: string
+          professional_id?: string
+          scheduled_start_at?: string
+          status?: string
+          studio_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_drafts_procedure_id_fkey"
+            columns: ["procedure_id"]
+            isOneToOne: false
+            referencedRelation: "procedures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_drafts_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_drafts_studio_id_fkey"
+            columns: ["studio_id"]
+            isOneToOne: false
+            referencedRelation: "studios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_drafts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_reactions: {
+        Row: {
+          appointment_id: string | null
+          client_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          occurred_when: string
+          photo_urls: string[]
+          reaction_type: string
+          recorded_at: string
+          status: string
+          symptoms: string
+          tenant_id: string
+          treatment: string | null
+          updated_at: string
+        }
+        Insert: {
+          appointment_id?: string | null
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          occurred_when: string
+          photo_urls?: string[]
+          reaction_type: string
+          recorded_at?: string
+          status?: string
+          symptoms: string
+          tenant_id: string
+          treatment?: string | null
+          updated_at?: string
+        }
+        Update: {
+          appointment_id?: string | null
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          occurred_when?: string
+          photo_urls?: string[]
+          reaction_type?: string
+          recorded_at?: string
+          status?: string
+          symptoms?: string
+          tenant_id?: string
+          treatment?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_reactions_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_reactions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_reactions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_reactions_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -310,6 +633,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "clients_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      favorite_products: {
+        Row: {
+          brand: string
+          category: string | null
+          created_at: string
+          default_step_time: number | null
+          id: string
+          product: string
+          tenant_id: string
+          use_count: number
+        }
+        Insert: {
+          brand: string
+          category?: string | null
+          created_at?: string
+          default_step_time?: number | null
+          id?: string
+          product: string
+          tenant_id: string
+          use_count?: number
+        }
+        Update: {
+          brand?: string
+          category?: string | null
+          created_at?: string
+          default_step_time?: number | null
+          id?: string
+          product?: string
+          tenant_id?: string
+          use_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favorite_products_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -422,6 +786,202 @@ export type Database = {
           },
         ]
       }
+      professional_notes: {
+        Row: {
+          appointment_id: string | null
+          client_id: string
+          content: string
+          created_at: string
+          created_by: string | null
+          id: string
+          pinned: boolean
+          tenant_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          appointment_id?: string | null
+          client_id: string
+          content: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          pinned?: boolean
+          tenant_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          appointment_id?: string | null
+          client_id?: string
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          pinned?: boolean
+          tenant_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "professional_notes_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "professional_notes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "professional_notes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "professional_notes_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      professional_services: {
+        Row: {
+          created_at: string
+          custom_price: number | null
+          duration_minutes: number
+          id: string
+          is_active: boolean
+          procedure_id: string
+          professional_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          custom_price?: number | null
+          duration_minutes?: number
+          id?: string
+          is_active?: boolean
+          procedure_id: string
+          professional_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          custom_price?: number | null
+          duration_minutes?: number
+          id?: string
+          is_active?: boolean
+          procedure_id?: string
+          professional_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "professional_services_procedure_id_fkey"
+            columns: ["procedure_id"]
+            isOneToOne: false
+            referencedRelation: "procedures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "professional_services_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "professional_services_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      professionals: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          display_name: string
+          id: string
+          is_active: boolean
+          profile_id: string
+          rating: number
+          role_title: string | null
+          sort_order: number
+          studio_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name: string
+          id?: string
+          is_active?: boolean
+          profile_id: string
+          rating?: number
+          role_title?: string | null
+          sort_order?: number
+          studio_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name?: string
+          id?: string
+          is_active?: boolean
+          profile_id?: string
+          rating?: number
+          role_title?: string | null
+          sort_order?: number
+          studio_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "professionals_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "professionals_studio_id_fkey"
+            columns: ["studio_id"]
+            isOneToOne: false
+            referencedRelation: "studios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "professionals_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -463,6 +1023,68 @@ export type Database = {
           },
         ]
       }
+      studios: {
+        Row: {
+          address: string | null
+          bio: string | null
+          booking_buffer_minutes: number
+          cover_image_url: string | null
+          created_at: string
+          id: string
+          is_solo: boolean
+          name: string
+          rating: number
+          reviews_count: number
+          slug: string
+          tenant_id: string
+          timezone: string
+          updated_at: string
+          waitlist_enabled: boolean
+        }
+        Insert: {
+          address?: string | null
+          bio?: string | null
+          booking_buffer_minutes?: number
+          cover_image_url?: string | null
+          created_at?: string
+          id?: string
+          is_solo?: boolean
+          name: string
+          rating?: number
+          reviews_count?: number
+          slug: string
+          tenant_id: string
+          timezone?: string
+          updated_at?: string
+          waitlist_enabled?: boolean
+        }
+        Update: {
+          address?: string | null
+          bio?: string | null
+          booking_buffer_minutes?: number
+          cover_image_url?: string | null
+          created_at?: string
+          id?: string
+          is_solo?: boolean
+          name?: string
+          rating?: number
+          reviews_count?: number
+          slug?: string
+          tenant_id?: string
+          timezone?: string
+          updated_at?: string
+          waitlist_enabled?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "studios_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenants: {
         Row: {
           accent_color: string | null
@@ -490,373 +1112,181 @@ export type Database = {
         }
         Relationships: []
       }
-      studios: {
-        Row: {
-          id: string
-          tenant_id: string
-          name: string
-          slug: string
-          address: string | null
-          bio: string | null
-          cover_image_url: string | null
-          rating: number
-          reviews_count: number
-          is_solo: boolean
-          waitlist_enabled: boolean
-          booking_buffer_minutes: number
-          timezone: string
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          tenant_id: string
-          name: string
-          slug: string
-          address?: string | null
-          bio?: string | null
-          cover_image_url?: string | null
-          rating?: number
-          reviews_count?: number
-          is_solo?: boolean
-          waitlist_enabled?: boolean
-          booking_buffer_minutes?: number
-          timezone?: string
-          created_at?: string
-          updated_at?: string
-        }
-        Update: Partial<Database['public']['Tables']['studios']['Insert']>
-        Relationships: []
-      }
-      professionals: {
-        Row: {
-          id: string
-          tenant_id: string
-          studio_id: string
-          profile_id: string
-          display_name: string
-          role_title: string | null
-          avatar_url: string | null
-          bio: string | null
-          rating: number
-          is_active: boolean
-          sort_order: number
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          tenant_id: string
-          studio_id: string
-          profile_id: string
-          display_name: string
-          role_title?: string | null
-          avatar_url?: string | null
-          bio?: string | null
-          rating?: number
-          is_active?: boolean
-          sort_order?: number
-          created_at?: string
-          updated_at?: string
-        }
-        Update: Partial<Database['public']['Tables']['professionals']['Insert']>
-        Relationships: []
-      }
-      professional_services: {
-        Row: {
-          id: string
-          tenant_id: string
-          professional_id: string
-          procedure_id: string
-          duration_minutes: number
-          custom_price: number | null
-          is_active: boolean
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          tenant_id: string
-          professional_id: string
-          procedure_id: string
-          duration_minutes?: number
-          custom_price?: number | null
-          is_active?: boolean
-          created_at?: string
-          updated_at?: string
-        }
-        Update: Partial<Database['public']['Tables']['professional_services']['Insert']>
-        Relationships: []
-      }
-      working_hours: {
-        Row: {
-          id: string
-          tenant_id: string
-          professional_id: string
-          day_of_week: number
-          start_time: string
-          end_time: string
-          is_active: boolean
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          tenant_id: string
-          professional_id: string
-          day_of_week: number
-          start_time: string
-          end_time: string
-          is_active?: boolean
-          created_at?: string
-          updated_at?: string
-        }
-        Update: Partial<Database['public']['Tables']['working_hours']['Insert']>
-        Relationships: []
-      }
       time_off: {
         Row: {
-          id: string
-          tenant_id: string
-          professional_id: string
-          start_at: string
+          created_at: string
           end_at: string
-          reason: string | null
+          id: string
           is_recurring: boolean
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          tenant_id: string
           professional_id: string
+          reason: string | null
           start_at: string
-          end_at: string
-          reason?: string | null
-          is_recurring?: boolean
-          created_at?: string
-          updated_at?: string
-        }
-        Update: Partial<Database['public']['Tables']['time_off']['Insert']>
-        Relationships: []
-      }
-      booking_drafts: {
-        Row: {
-          id: string
           tenant_id: string
-          studio_id: string
-          professional_id: string
-          procedure_id: string
-          scheduled_start_at: string
-          client_full_name: string
-          client_phone: string
-          client_email: string | null
-          client_birth_date: string | null
-          client_notes: string | null
-          status: string
-          created_at: string
           updated_at: string
         }
         Insert: {
-          id?: string
-          tenant_id: string
-          studio_id: string
-          professional_id: string
-          procedure_id: string
-          scheduled_start_at: string
-          client_full_name: string
-          client_phone: string
-          client_email?: string | null
-          client_birth_date?: string | null
-          client_notes?: string | null
-          status?: string
           created_at?: string
+          end_at: string
+          id?: string
+          is_recurring?: boolean
+          professional_id: string
+          reason?: string | null
+          start_at: string
+          tenant_id: string
           updated_at?: string
         }
-        Update: Partial<Database['public']['Tables']['booking_drafts']['Insert']>
-        Relationships: []
+        Update: {
+          created_at?: string
+          end_at?: string
+          id?: string
+          is_recurring?: boolean
+          professional_id?: string
+          reason?: string | null
+          start_at?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_off_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_off_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       waitlist_entries: {
         Row: {
-          id: string
-          tenant_id: string
-          studio_id: string
-          professional_id: string | null
-          procedure_id: string | null
-          preferred_date: string
-          client_full_name: string
-          client_phone: string
           client_email: string | null
-          status: string
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          tenant_id: string
-          studio_id: string
-          professional_id?: string | null
-          procedure_id?: string | null
-          preferred_date: string
           client_full_name: string
           client_phone: string
-          client_email?: string | null
-          status?: string
-          created_at?: string
-          updated_at?: string
-        }
-        Update: Partial<Database['public']['Tables']['waitlist_entries']['Insert']>
-        Relationships: []
-      }
-      anamnesis_form_versions: {
-        Row: {
-          id: string
-          tenant_id: string
-          form_id: string
-          version_number: number
-          is_original: boolean
-          edit_reason: string | null
-          edited_by: string | null
-          answers: Json
-          signature_png: string | null
-          signed_at: string | null
-          signer_ip: string | null
-          integrity_hash: string
           created_at: string
-        }
-        Insert: {
-          id?: string
-          tenant_id: string
-          form_id: string
-          version_number: number
-          is_original?: boolean
-          edit_reason?: string | null
-          edited_by?: string | null
-          answers: Json
-          signature_png?: string | null
-          signed_at?: string | null
-          signer_ip?: string | null
-          integrity_hash: string
-          created_at?: string
-        }
-        Update: Partial<Database['public']['Tables']['anamnesis_form_versions']['Insert']>
-        Relationships: []
-      }
-      client_reactions: {
-        Row: {
           id: string
-          tenant_id: string
-          client_id: string
-          appointment_id: string | null
-          reaction_type: string
-          occurred_when: string
-          symptoms: string
-          treatment: string | null
+          preferred_date: string
+          procedure_id: string | null
+          professional_id: string | null
           status: string
-          photo_urls: string[]
-          notes: string | null
-          recorded_at: string
-          created_by: string | null
-          created_at: string
+          studio_id: string
+          tenant_id: string
           updated_at: string
         }
         Insert: {
+          client_email?: string | null
+          client_full_name: string
+          client_phone: string
+          created_at?: string
           id?: string
-          tenant_id: string
-          client_id: string
-          appointment_id?: string | null
-          reaction_type: string
-          occurred_when: string
-          symptoms: string
-          treatment?: string | null
+          preferred_date: string
+          procedure_id?: string | null
+          professional_id?: string | null
           status?: string
-          photo_urls?: string[]
-          notes?: string | null
-          recorded_at?: string
-          created_by?: string | null
-          created_at?: string
+          studio_id: string
+          tenant_id: string
           updated_at?: string
         }
-        Update: Partial<Database['public']['Tables']['client_reactions']['Insert']>
-        Relationships: []
+        Update: {
+          client_email?: string | null
+          client_full_name?: string
+          client_phone?: string
+          created_at?: string
+          id?: string
+          preferred_date?: string
+          procedure_id?: string | null
+          professional_id?: string | null
+          status?: string
+          studio_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "waitlist_entries_procedure_id_fkey"
+            columns: ["procedure_id"]
+            isOneToOne: false
+            referencedRelation: "procedures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "waitlist_entries_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "waitlist_entries_studio_id_fkey"
+            columns: ["studio_id"]
+            isOneToOne: false
+            referencedRelation: "studios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "waitlist_entries_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
-      appointment_procedures: {
+      working_hours: {
         Row: {
-          id: string
-          tenant_id: string
-          appointment_id: string
-          products_used: Json
-          step_times: Json
-          technique: string | null
-          technical_notes: string | null
           created_at: string
+          day_of_week: number
+          end_time: string
+          id: string
+          is_active: boolean
+          professional_id: string
+          start_time: string
+          tenant_id: string
           updated_at: string
         }
         Insert: {
-          id?: string
-          tenant_id: string
-          appointment_id: string
-          products_used?: Json
-          step_times?: Json
-          technique?: string | null
-          technical_notes?: string | null
           created_at?: string
+          day_of_week: number
+          end_time: string
+          id?: string
+          is_active?: boolean
+          professional_id: string
+          start_time: string
+          tenant_id: string
           updated_at?: string
         }
-        Update: Partial<Database['public']['Tables']['appointment_procedures']['Insert']>
-        Relationships: []
-      }
-      favorite_products: {
-        Row: {
-          id: string
-          tenant_id: string
-          brand: string
-          product: string
-          category: string | null
-          default_step_time: number | null
-          use_count: number
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          tenant_id: string
-          brand: string
-          product: string
-          category?: string | null
-          default_step_time?: number | null
-          use_count?: number
+        Update: {
           created_at?: string
-        }
-        Update: Partial<Database['public']['Tables']['favorite_products']['Insert']>
-        Relationships: []
-      }
-      professional_notes: {
-        Row: {
-          id: string
-          tenant_id: string
-          client_id: string
-          appointment_id: string | null
-          title: string
-          content: string
-          pinned: boolean
-          created_by: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
+          day_of_week?: number
+          end_time?: string
           id?: string
-          tenant_id: string
-          client_id: string
-          appointment_id?: string | null
-          title: string
-          content: string
-          pinned?: boolean
-          created_by?: string | null
-          created_at?: string
+          is_active?: boolean
+          professional_id?: string
+          start_time?: string
+          tenant_id?: string
           updated_at?: string
         }
-        Update: Partial<Database['public']['Tables']['professional_notes']['Insert']>
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "working_hours_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "working_hours_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -992,6 +1422,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },
