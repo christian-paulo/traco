@@ -2,9 +2,15 @@
 
 import { revalidatePath } from 'next/cache';
 
+import { getCurrentProfessional } from '@/lib/queries/studio';
 import { getCurrentProfile } from '@/lib/queries/profile';
 import { createClient } from '@/lib/supabase/server';
-import { appointmentSchema, type AppointmentInput } from '@/lib/validations/appointment';
+import {
+  appointmentSchema,
+  scheduledAppointmentSchema,
+  type AppointmentInput,
+  type ScheduledAppointmentInput,
+} from '@/lib/validations/appointment';
 
 type SimpleResult = { success: true } | { success: false; error: string };
 type CreateResult = { success: true; data: { id: string } } | { success: false; error: string };
@@ -32,6 +38,8 @@ export async function createAppointment(input: AppointmentInput): Promise<Create
       performed_at: new Date(parsed.data.performed_at).toISOString(),
       price: parsed.data.price,
       notes: parsed.data.notes,
+      status: 'completed',
+      source: 'manual',
     })
     .select('id, client_id')
     .single();
@@ -42,6 +50,54 @@ export async function createAppointment(input: AppointmentInput): Promise<Create
 
   revalidatePath('/dashboard/atendimentos');
   revalidatePath('/dashboard');
+  revalidatePath('/dashboard/agenda');
+  revalidatePath(`/dashboard/clientes/${data.client_id}`);
+  return { success: true, data: { id: data.id } };
+}
+
+export async function createScheduledAppointment(
+  input: ScheduledAppointmentInput,
+): Promise<CreateResult> {
+  const parsed = scheduledAppointmentSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: flattenZodErrors(parsed.error) };
+  }
+
+  const profile = await getCurrentProfile();
+  if (!profile) return { success: false, error: 'Sessão expirada.' };
+  const professional = await getCurrentProfessional();
+  if (!professional) return { success: false, error: 'Profissional não configurado.' };
+
+  const supabase = await createClient();
+  const startAt = new Date(parsed.data.scheduled_start_at);
+  const endAt = new Date(parsed.data.scheduled_end_at);
+
+  const { data, error } = await supabase
+    .from('appointments')
+    .insert({
+      tenant_id: profile.tenantId,
+      professional_id: professional.id,
+      client_id: parsed.data.client_id,
+      procedure_id: parsed.data.procedure_id,
+      performed_at: startAt.toISOString(),
+      scheduled_start_at: startAt.toISOString(),
+      scheduled_end_at: endAt.toISOString(),
+      price: parsed.data.price,
+      notes: parsed.data.notes,
+      notes_internal: parsed.data.notes_internal ?? null,
+      status: 'confirmed',
+      source: 'manual',
+    })
+    .select('id, client_id')
+    .single();
+
+  if (error || !data) {
+    return { success: false, error: error?.message ?? 'Erro ao agendar.' };
+  }
+
+  revalidatePath('/dashboard/atendimentos');
+  revalidatePath('/dashboard');
+  revalidatePath('/dashboard/agenda');
   revalidatePath(`/dashboard/clientes/${data.client_id}`);
   return { success: true, data: { id: data.id } };
 }
@@ -73,6 +129,25 @@ export async function updateAppointment(
 
   revalidatePath('/dashboard/atendimentos');
   revalidatePath('/dashboard');
+  revalidatePath('/dashboard/agenda');
+  if (data?.client_id) revalidatePath(`/dashboard/clientes/${data.client_id}`);
+  return { success: true };
+}
+
+export async function updateAppointmentStatus(
+  id: string,
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'no_show',
+): Promise<SimpleResult> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('appointments')
+    .update({ status })
+    .eq('id', id)
+    .select('client_id')
+    .single();
+  if (error) return { success: false, error: error.message };
+  revalidatePath('/dashboard/atendimentos');
+  revalidatePath('/dashboard/agenda');
   if (data?.client_id) revalidatePath(`/dashboard/clientes/${data.client_id}`);
   return { success: true };
 }
@@ -91,6 +166,7 @@ export async function deleteAppointment(id: string): Promise<SimpleResult> {
 
   revalidatePath('/dashboard/atendimentos');
   revalidatePath('/dashboard');
+  revalidatePath('/dashboard/agenda');
   if (existing?.client_id) revalidatePath(`/dashboard/clientes/${existing.client_id}`);
   return { success: true };
 }
@@ -100,7 +176,7 @@ export async function getAppointment(id: string) {
   const { data } = await supabase
     .from('appointments')
     .select(
-      'id, client_id, procedure_id, performed_at, price, notes, return_due_date, clients(id, full_name, phone), procedures(id, name, color)',
+      'id, client_id, procedure_id, performed_at, scheduled_start_at, scheduled_end_at, status, price, notes, notes_internal, return_due_date, clients(id, full_name, phone), procedures(id, name, color)',
     )
     .eq('id', id)
     .maybeSingle();

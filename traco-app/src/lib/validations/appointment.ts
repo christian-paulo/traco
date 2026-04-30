@@ -23,3 +23,30 @@ export const appointmentSchema = z.object({
 
 export type AppointmentInput = z.input<typeof appointmentSchema>;
 export type AppointmentValues = z.output<typeof appointmentSchema>;
+
+export const scheduledAppointmentSchema = z.object({
+  client_id: z.string().uuid('Selecione uma cliente.'),
+  procedure_id: z.string().uuid('Selecione um procedimento.'),
+  scheduled_start_at: z
+    .string()
+    .min(1, 'Informe a data e hora.')
+    .refine((v) => !Number.isNaN(new Date(v).getTime()), 'Data inválida.'),
+  scheduled_end_at: z
+    .string()
+    .min(1, 'Informe a duração.')
+    .refine((v) => !Number.isNaN(new Date(v).getTime()), 'Data inválida.'),
+  price: z.number().nonnegative('Valor não pode ser negativo.'),
+  notes: z
+    .string()
+    .trim()
+    .transform((v) => (v === '' ? null : v))
+    .nullable(),
+  notes_internal: z
+    .string()
+    .trim()
+    .transform((v) => (v === '' ? null : v))
+    .nullable()
+    .optional(),
+});
+
+export type ScheduledAppointmentInput = z.input<typeof scheduledAppointmentSchema>;

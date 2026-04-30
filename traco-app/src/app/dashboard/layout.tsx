@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 
 import { DashboardShell } from '@/components/shared/dashboard-shell';
+import { countPendingDrafts } from '@/lib/queries/booking-drafts';
 import { getCurrentProfile } from '@/lib/queries/profile';
 
 export default async function DashboardLayout({
@@ -13,6 +14,13 @@ export default async function DashboardLayout({
     redirect('/login');
   }
 
+  let pendingDrafts = 0;
+  try {
+    pendingDrafts = await countPendingDrafts();
+  } catch {
+    // tabela pode ainda não existir se a migração não rodou — não bloqueia
+  }
+
   return (
     <DashboardShell
       profile={{
@@ -20,6 +28,7 @@ export default async function DashboardLayout({
         email: profile.email,
         avatarUrl: profile.avatarUrl,
       }}
+      badges={{ pendingDrafts }}
     >
       {children}
     </DashboardShell>

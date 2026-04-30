@@ -1,8 +1,10 @@
 'use client';
 
 import {
+  Calendar,
   CalendarCheck,
   Clock,
+  Inbox,
   LayoutDashboard,
   LogOut,
   Settings,
@@ -22,10 +24,18 @@ type NavItem = {
   label: string;
   href: string;
   icon: LucideIcon;
+  badgeKey?: 'pendingDrafts';
 };
 
 const NAV: NavItem[] = [
   { label: 'Início', href: '/dashboard', icon: LayoutDashboard },
+  { label: 'Agenda', href: '/dashboard/agenda', icon: Calendar },
+  {
+    label: 'Pendentes',
+    href: '/dashboard/agendamentos-pendentes',
+    icon: Inbox,
+    badgeKey: 'pendingDrafts',
+  },
   { label: 'Clientes', href: '/dashboard/clientes', icon: Users },
   { label: 'Atendimentos', href: '/dashboard/atendimentos', icon: CalendarCheck },
   { label: 'Recuperar', href: '/dashboard/recuperar', icon: Clock },
@@ -39,9 +49,14 @@ export type SidebarProfile = {
   avatarUrl: string | null;
 };
 
+export type SidebarBadges = {
+  pendingDrafts?: number;
+};
+
 type SidebarProps = {
   profile: SidebarProfile;
   onNavigate?: () => void;
+  badges?: SidebarBadges;
 };
 
 function isActive(pathname: string, href: string) {
@@ -57,7 +72,7 @@ function getInitials(profile: SidebarProfile) {
   return (first + last).toUpperCase() || source[0]?.toUpperCase() || '?';
 }
 
-export function Sidebar({ profile, onNavigate }: SidebarProps) {
+export function Sidebar({ profile, onNavigate, badges }: SidebarProps) {
   const pathname = usePathname();
   const initials = getInitials(profile);
   const displayName = profile.fullName?.trim() || profile.email;
@@ -92,7 +107,12 @@ export function Sidebar({ profile, onNavigate }: SidebarProps) {
               )}
             >
               <Icon className="size-[18px] shrink-0" strokeWidth={1.5} />
-              <span>{item.label}</span>
+              <span className="flex-1">{item.label}</span>
+              {item.badgeKey === 'pendingDrafts' && badges?.pendingDrafts ? (
+                <span className="bg-[var(--gold)] text-ink ml-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-medium tracking-normal">
+                  {badges.pendingDrafts}
+                </span>
+              ) : null}
             </Link>
           );
         })}

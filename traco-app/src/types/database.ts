@@ -185,10 +185,16 @@ export type Database = {
           created_at: string
           id: string
           notes: string | null
+          notes_internal: string | null
           performed_at: string
           price: number
           procedure_id: string
+          professional_id: string | null
           return_due_date: string | null
+          scheduled_end_at: string | null
+          scheduled_start_at: string | null
+          source: string
+          status: string
           tenant_id: string
           updated_at: string
         }
@@ -197,10 +203,16 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
+          notes_internal?: string | null
           performed_at: string
           price?: number
           procedure_id: string
+          professional_id?: string | null
           return_due_date?: string | null
+          scheduled_end_at?: string | null
+          scheduled_start_at?: string | null
+          source?: string
+          status?: string
           tenant_id: string
           updated_at?: string
         }
@@ -209,10 +221,16 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
+          notes_internal?: string | null
           performed_at?: string
           price?: number
           procedure_id?: string
+          professional_id?: string | null
           return_due_date?: string | null
+          scheduled_end_at?: string | null
+          scheduled_start_at?: string | null
+          source?: string
+          status?: string
           tenant_id?: string
           updated_at?: string
         }
@@ -464,6 +482,224 @@ export type Database = {
           updated_at?: string
           whatsapp_template?: string | null
         }
+        Relationships: []
+      }
+      studios: {
+        Row: {
+          id: string
+          tenant_id: string
+          name: string
+          slug: string
+          address: string | null
+          bio: string | null
+          cover_image_url: string | null
+          rating: number
+          reviews_count: number
+          is_solo: boolean
+          waitlist_enabled: boolean
+          booking_buffer_minutes: number
+          timezone: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          tenant_id: string
+          name: string
+          slug: string
+          address?: string | null
+          bio?: string | null
+          cover_image_url?: string | null
+          rating?: number
+          reviews_count?: number
+          is_solo?: boolean
+          waitlist_enabled?: boolean
+          booking_buffer_minutes?: number
+          timezone?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['studios']['Insert']>
+        Relationships: []
+      }
+      professionals: {
+        Row: {
+          id: string
+          tenant_id: string
+          studio_id: string
+          profile_id: string
+          display_name: string
+          role_title: string | null
+          avatar_url: string | null
+          bio: string | null
+          rating: number
+          is_active: boolean
+          sort_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          tenant_id: string
+          studio_id: string
+          profile_id: string
+          display_name: string
+          role_title?: string | null
+          avatar_url?: string | null
+          bio?: string | null
+          rating?: number
+          is_active?: boolean
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['professionals']['Insert']>
+        Relationships: []
+      }
+      professional_services: {
+        Row: {
+          id: string
+          tenant_id: string
+          professional_id: string
+          procedure_id: string
+          duration_minutes: number
+          custom_price: number | null
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          tenant_id: string
+          professional_id: string
+          procedure_id: string
+          duration_minutes?: number
+          custom_price?: number | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['professional_services']['Insert']>
+        Relationships: []
+      }
+      working_hours: {
+        Row: {
+          id: string
+          tenant_id: string
+          professional_id: string
+          day_of_week: number
+          start_time: string
+          end_time: string
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          tenant_id: string
+          professional_id: string
+          day_of_week: number
+          start_time: string
+          end_time: string
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['working_hours']['Insert']>
+        Relationships: []
+      }
+      time_off: {
+        Row: {
+          id: string
+          tenant_id: string
+          professional_id: string
+          start_at: string
+          end_at: string
+          reason: string | null
+          is_recurring: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          tenant_id: string
+          professional_id: string
+          start_at: string
+          end_at: string
+          reason?: string | null
+          is_recurring?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['time_off']['Insert']>
+        Relationships: []
+      }
+      booking_drafts: {
+        Row: {
+          id: string
+          tenant_id: string
+          studio_id: string
+          professional_id: string
+          procedure_id: string
+          scheduled_start_at: string
+          client_full_name: string
+          client_phone: string
+          client_email: string | null
+          client_birth_date: string | null
+          client_notes: string | null
+          status: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          tenant_id: string
+          studio_id: string
+          professional_id: string
+          procedure_id: string
+          scheduled_start_at: string
+          client_full_name: string
+          client_phone: string
+          client_email?: string | null
+          client_birth_date?: string | null
+          client_notes?: string | null
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['booking_drafts']['Insert']>
+        Relationships: []
+      }
+      waitlist_entries: {
+        Row: {
+          id: string
+          tenant_id: string
+          studio_id: string
+          professional_id: string | null
+          procedure_id: string | null
+          preferred_date: string
+          client_full_name: string
+          client_phone: string
+          client_email: string | null
+          status: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          tenant_id: string
+          studio_id: string
+          professional_id?: string | null
+          procedure_id?: string | null
+          preferred_date: string
+          client_full_name: string
+          client_phone: string
+          client_email?: string | null
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['waitlist_entries']['Insert']>
         Relationships: []
       }
     }

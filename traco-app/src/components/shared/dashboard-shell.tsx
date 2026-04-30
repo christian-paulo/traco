@@ -4,29 +4,30 @@ import { useState } from 'react';
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 
-import { Sidebar, type SidebarProfile } from './sidebar';
+import { Sidebar, type SidebarBadges, type SidebarProfile } from './sidebar';
 import { Topbar } from './topbar';
 
 type DashboardShellProps = {
   profile: SidebarProfile;
+  badges?: SidebarBadges;
   children: React.ReactNode;
 };
 
-export function DashboardShell({ profile, children }: DashboardShellProps) {
+export function DashboardShell({ profile, badges, children }: DashboardShellProps) {
   const [open, setOpen] = useState(false);
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <div className="bg-background flex min-h-dvh">
         <aside className="hidden w-[260px] shrink-0 border-r border-[var(--gold)]/20 lg:block">
-          <Sidebar profile={profile} />
+          <Sidebar profile={profile} badges={badges} />
         </aside>
 
         <SheetContent side="left" className="bg-ink w-[280px] border-r border-[var(--gold)]/20 p-0">
           <SheetHeader className="sr-only">
             <SheetTitle>Menu</SheetTitle>
           </SheetHeader>
-          <Sidebar profile={profile} onNavigate={() => setOpen(false)} />
+          <Sidebar profile={profile} onNavigate={() => setOpen(false)} badges={badges} />
         </SheetContent>
 
         <div className="flex min-w-0 flex-1 flex-col">

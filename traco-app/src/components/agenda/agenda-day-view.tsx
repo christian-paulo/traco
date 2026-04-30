@@ -1,0 +1,165 @@
+'use client';
+
+import Link from 'next/link';
+import { useMemo } from 'react';
+
+import { Card } from '@/components/ui/card';
+import { formatCurrency } from '@/lib/format';
+import { cn } from '@/lib/utils';
+
+export type AgendaAppointment = {
+  id: string;
+  client_id: string;
+  client_name: string;
+  procedure_name: string;
+  procedure_color: string;
+  scheduled_start_at: string;
+  scheduled_end_at: string;
+  status: string;
+  price: number;
+};
+
+type Props = {
+  date: string; // YYYY-MM-DD
+  appointments: AgendaAppointment[];
+  workingHours: { start_time: string; end_time: string; is_active: boolean } | null;
+};
+
+const PX_PER_MIN = 1.2;
+const DAY_START_HOUR = 8;
+const DAY_END_HOUR = 22;
+
+function timeToMin(time: string): number {
+  const [h, m] = time.split(':').map(Number);
+  return h * 60 + (m ?? 0);
+}
+
+function minToLabel(min: number): string {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+export function AgendaDayView({ date, appointments, workingHours }: Props) {
+  void date;
+  const dayStartMin = DAY_START_HOUR * 60;
+  const dayEndMin = DAY_END_HOUR * 60;
+  const totalMin = dayEndMin - dayStartMin;
+  const totalHeight = totalMin * PX_PER_MIN;
+
+  const hourMarks = useMemo(() => {
+    const marks: number[] = [];
+    for (let h = DAY_START_HOUR; h <= DAY_END_HOUR; h += 1) {
+      marks.push(h * 60);
+    }
+    return marks;
+  }, []);
+
+  const workingStart = workingHours?.is_active ? timeToMin(workingHours.start_time) : null;
+  const workingEnd = workingHours?.is_active ? timeToMin(workingHours.end_time) : null;
+
+  function appointmentRect(apt: AgendaAppointment) {
+    const startDate = new Date(apt.scheduled_start_at);
+    const endDate = new Date(apt.scheduled_end_at);
+    const startMin = startDate.getHours() * 60 + startDate.getMinutes();
+    const endMin = endDate.getHours() * 60 + endDate.getMinutes();
+    const top = Math.max(0, (startMin - dayStartMin) * PX_PER_MIN);
+    const height = Math.max(24, (endMin - startMin) * PX_PER_MIN);
+    return { top, height, startMin, endMin };
+  }
+
+  return (
+    <Card variant="premium" className="bg-card border-0 ring-1 ring-[var(--border)] overflow-hidden p-0">
+      <div className="flex">
+        <div className="border-r border-cream-dark/60" style={{ width: 64 }}>
+          <div className="border-b border-cream-dark/60 px-2 py-3 text-center text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+            hora
+          </div>
+          <div className="relative" style={{ height: totalHeight }}>
+            {hourMarks.map((m) => (
+              <div
+                key={m}
+                className="absolute left-0 right-0 -translate-y-1/2 px-2 text-right text-xs text-muted-foreground"
+                style={{ top: (m - dayStartMin) * PX_PER_MIN }}
+              >
+                {minToLabel(m)}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex-1">
+          <div className="border-b border-cream-dark/60 px-4 py-3 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+            Agenda do dia
+          </div>
+          <div className="relative" style={{ height: totalHeight }}>
+            {/* Linhas de hora */}
+            {hourMarks.map((m) => (
+              <div
+                key={m}
+                className="absolute inset-x-0 border-t border-cream-dark/40"
+                style={{ top: (m - dayStartMin) * PX_PER_MIN }}
+              />
+            ))}
+
+            {/* Sombrear fora do horário de trabalho */}
+            {workingStart !== null && workingStart > dayStartMin ? (
+              <div
+                className="bg-cream/40 absolute inset-x-0"
+                style={{ top: 0, height: (workingStart - dayStartMin) * PX_PER_MIN }}
+              />
+            ) : null}
+            {workingEnd !== null && workingEnd < dayEndMin ? (
+              <div
+                className="bg-cream/40 absolute inset-x-0"
+                style={{
+                  top: (workingEnd - dayStartMin) * PX_PER_MIN,
+                  height: (dayEndMin - workingEnd) * PX_PER_MIN,
+                }}
+              />
+            ) : null}
+            {!workingHours?.is_active ? (
+              <div className="bg-cream/40 absolute inset-0 flex items-center justify-center">
+                <p className="font-serif text-sm italic text-muted-foreground">
+                  Sem expediente neste dia
+                </p>
+              </div>
+            ) : null}
+
+            {/* Appointments */}
+            {appointments.map((apt) => {
+              const { top, height, startMin, endMin } = appointmentRect(apt);
+              const isCancelled = apt.status === 'cancelled' || apt.status === 'no_show';
+              return (
+                <Link
+                  key={apt.id}
+                  href={`/dashboard/clientes/${apt.client_id}`}
+                  className={cn(
+                    'absolute left-2 right-2 flex flex-col gap-0.5 overflow-hidden rounded-md px-2 py-1.5 text-xs shadow-sm transition-shadow hover:shadow-md',
+                    isCancelled && 'opacity-50',
+                  )}
+                  style={{
+                    top,
+                    height,
+                    backgroundColor: `${apt.procedure_color}20`,
+                    borderLeft: `3px solid ${apt.procedure_color}`,
+                  }}
+                >
+                  <span className="truncate font-medium text-foreground">
+                    {apt.client_name}
+                  </span>
+                  <span className="truncate text-[10px] uppercase tracking-[0.1em] text-muted-foreground">
+                    {minToLabel(startMin)} – {minToLabel(endMin)} · {apt.procedure_name}
+                  </span>
+                  <span className="text-[10px] text-foreground/80">
+                    {formatCurrency(apt.price)}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
