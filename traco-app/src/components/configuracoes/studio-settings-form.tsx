@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, Copy, Loader2, Save } from 'lucide-react';
+import { Loader2, Save } from 'lucide-react';
 import { useState, useTransition } from 'react';
 import { toast } from 'sonner';
 
@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { updateStudio } from '@/server/actions/studio';
+
+import { ShareLinkCard } from './share-link-card';
 
 type Props = {
   initial: {
@@ -28,7 +30,6 @@ export function StudioSettingsForm({ initial, publicBaseUrl }: Props) {
   const [bio, setBio] = useState(initial.bio);
   const [coverUrl, setCoverUrl] = useState(initial.cover_image_url);
   const [isPending, startTransition] = useTransition();
-  const [copied, setCopied] = useState(false);
 
   const publicUrl = `${publicBaseUrl}/agendar/${slug || '...'}`;
 
@@ -45,17 +46,6 @@ export function StudioSettingsForm({ initial, publicBaseUrl }: Props) {
       if (result.success) toast.success('Studio atualizado.');
       else toast.error(result.error || 'Erro ao salvar.');
     });
-  }
-
-  async function handleCopy() {
-    try {
-      await navigator.clipboard.writeText(publicUrl);
-      setCopied(true);
-      toast.success('Link copiado.');
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast.error('Não foi possível copiar.');
-    }
   }
 
   return (
@@ -82,22 +72,15 @@ export function StudioSettingsForm({ initial, publicBaseUrl }: Props) {
           placeholder="alana"
           disabled={isPending}
         />
-        <div className="bg-cream/40 flex items-center gap-2 rounded-md border border-cream-dark px-3 py-2 text-xs">
-          <span className="text-muted-foreground">Seu link:</span>
-          <code className="flex-1 truncate font-mono text-foreground">{publicUrl}</code>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-7"
-            onClick={handleCopy}
-            disabled={!slug}
-          >
-            {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
-            {copied ? 'Copiado' : 'Copiar'}
-          </Button>
-        </div>
       </div>
+
+      {slug ? (
+        <ShareLinkCard publicUrl={publicUrl} studioName={name || 'meu studio'} />
+      ) : (
+        <div className="bg-cream/40 flex items-center gap-2 rounded-md border border-cream-dark px-3 py-2 text-xs">
+          <span className="text-muted-foreground">Defina um slug acima para gerar seu link.</span>
+        </div>
+      )}
 
       <div className="flex flex-col gap-1.5">
         <Label className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">

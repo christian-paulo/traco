@@ -6,6 +6,10 @@ import type { ReactElement } from 'react';
 import AnamnesisCompletedClientEmail from '@/emails/anamnesis-completed-client';
 import AnamnesisCompletedDesignerEmail from '@/emails/anamnesis-completed-designer';
 import AnamnesisInviteEmail from '@/emails/anamnesis-invite';
+import BookingConfirmedClientEmail from '@/emails/booking-confirmed-client';
+import BookingDraftClientEmail from '@/emails/booking-draft-client';
+import BookingDraftDesignerEmail from '@/emails/booking-draft-designer';
+import BookingRejectedClientEmail from '@/emails/booking-rejected-client';
 import PostAttendanceEmail from '@/emails/post-attendance';
 import RecoveryInviteEmail from '@/emails/recovery-invite';
 
@@ -135,6 +139,114 @@ export async function sendAnamnesisCompletedDesigner(params: {
       }),
     },
     'anamnesis-completed-designer',
+  );
+}
+
+export async function sendBookingDraftDesignerEmail(params: {
+  to: string;
+  designerFirstName: string;
+  clientName: string;
+  clientPhone: string;
+  clientEmail: string | null;
+  scheduledFormatted: string;
+  procedureName: string;
+  clientNotes: string | null;
+  panelUrl: string;
+}): Promise<EmailResult> {
+  return rawSend(
+    {
+      to: params.to,
+      subject: `Novo agendamento solicitado por ${params.clientName}`,
+      react: BookingDraftDesignerEmail({
+        designerFirstName: params.designerFirstName,
+        clientName: params.clientName,
+        clientPhone: params.clientPhone,
+        clientEmail: params.clientEmail,
+        scheduledFormatted: params.scheduledFormatted,
+        procedureName: params.procedureName,
+        clientNotes: params.clientNotes,
+        panelUrl: params.panelUrl,
+      }),
+    },
+    'booking-draft-designer',
+  );
+}
+
+export async function sendBookingDraftClientEmail(params: {
+  to: string;
+  clientName: string;
+  designerName: string;
+  studioName: string;
+  scheduledFormatted: string;
+  procedureName: string;
+}): Promise<EmailResult> {
+  return rawSend(
+    {
+      to: params.to,
+      subject: 'Recebemos sua solicitação de agendamento',
+      react: BookingDraftClientEmail({
+        clientName: params.clientName,
+        designerName: params.designerName,
+        studioName: params.studioName,
+        scheduledFormatted: params.scheduledFormatted,
+        procedureName: params.procedureName,
+      }),
+    },
+    'booking-draft-client',
+  );
+}
+
+export async function sendBookingConfirmedClientEmail(params: {
+  to: string;
+  clientName: string;
+  designerName: string;
+  studioName: string;
+  studioAddress: string | null;
+  scheduledFormatted: string;
+  procedureName: string;
+}): Promise<EmailResult> {
+  return rawSend(
+    {
+      to: params.to,
+      subject: `Seu agendamento foi confirmado por ${params.designerName}`,
+      react: BookingConfirmedClientEmail({
+        clientName: params.clientName,
+        designerName: params.designerName,
+        studioName: params.studioName,
+        studioAddress: params.studioAddress,
+        scheduledFormatted: params.scheduledFormatted,
+        procedureName: params.procedureName,
+      }),
+    },
+    'booking-confirmed-client',
+  );
+}
+
+export async function sendBookingRejectedClientEmail(params: {
+  to: string;
+  clientName: string;
+  designerName: string;
+  studioName: string;
+  scheduledFormatted: string;
+  procedureName: string;
+  reason: string | null;
+  bookingUrl: string;
+}): Promise<EmailResult> {
+  return rawSend(
+    {
+      to: params.to,
+      subject: 'Sua solicitação não pôde ser atendida',
+      react: BookingRejectedClientEmail({
+        clientName: params.clientName,
+        designerName: params.designerName,
+        studioName: params.studioName,
+        scheduledFormatted: params.scheduledFormatted,
+        procedureName: params.procedureName,
+        reason: params.reason,
+        bookingUrl: params.bookingUrl,
+      }),
+    },
+    'booking-rejected-client',
   );
 }
 
