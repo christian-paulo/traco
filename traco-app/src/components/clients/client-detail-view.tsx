@@ -13,7 +13,6 @@ import { TabNotas } from '@/components/atendimento/tabs/tab-notas';
 import { TabReacoes } from '@/components/atendimento/tabs/tab-reacoes';
 import { PhotosSection } from '@/components/photos/photos-section';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -32,7 +31,6 @@ import { ClientAlertsCards } from './client-alerts-cards';
 import { ClientFichaCTA } from './client-ficha-cta';
 import { ClientFichaVersionWidget } from './client-ficha-version-widget';
 import { ClientFormDialog, type EditableClient } from './client-form-dialog';
-import { ClientSkinTypeCard } from './client-skin-type-card';
 import { DeleteClientDialog } from './delete-client-dialog';
 
 type Props = {
@@ -214,43 +212,12 @@ export function ClientDetailView({
               </CardContent>
             </Card>
 
-            <ClientSkinTypeCard
-              clientId={client.id}
-              current={client.skin_phototype}
-            />
-
             {versions.length > 0 ? (
               <ClientFichaVersionWidget
                 versions={versions}
                 pdfUrl={signedForm?.pdf_url ?? null}
               />
             ) : null}
-
-            <Card
-              variant="premium"
-              className="bg-card border-0 ring-1 ring-[var(--border)] py-6 lg:col-span-2"
-            >
-              <CardHeader className="px-6 pb-2">
-                <CardTitle className="font-serif text-lg font-medium">Tags</CardTitle>
-              </CardHeader>
-              <CardContent className="px-6">
-                {(client.tags ?? []).length > 0 ? (
-                  <div className="flex flex-wrap gap-1.5">
-                    {client.tags.map((tag) => (
-                      <Badge
-                        key={tag}
-                        variant="outline"
-                        className="border-[var(--gold)]/40 bg-[var(--gold)]/10 text-foreground"
-                      >
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">Sem tags.</p>
-                )}
-              </CardContent>
-            </Card>
 
             <Card
               variant="premium"
