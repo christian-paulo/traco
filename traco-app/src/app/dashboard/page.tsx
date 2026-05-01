@@ -7,6 +7,7 @@ import { ActiveReactionsCard } from '@/components/dashboard/active-reactions-car
 import { PinnedNotesCard } from '@/components/dashboard/pinned-notes-card';
 import { TodayAppointmentsCard } from '@/components/dashboard/today-appointments-card';
 import { SeedTrigger } from '@/components/dashboard/seed-trigger';
+import { UnseenAchievementsCard } from '@/components/dashboard/unseen-achievements-card';
 import { OnboardingChecklist, type OnboardingStatus } from '@/components/onboarding/onboarding-checklist';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatCurrency, getFirstName } from '@/lib/format';
@@ -16,7 +17,7 @@ import {
   getPinnedNotesRecent,
   getTodayAppointments,
 } from '@/lib/queries/dashboard';
-import { listActiveGoals } from '@/lib/queries/goals';
+import { listActiveGoals, listUnseenAchievements } from '@/lib/queries/goals';
 import { refreshAllGoalsProgress } from '@/server/actions/goals';
 import { getCurrentProfile } from '@/lib/queries/profile';
 import { createClient } from '@/lib/supabase/server';
@@ -84,14 +85,21 @@ export default async function DashboardPage() {
   // Recalcula goals antes de buscar (idempotente)
   await refreshAllGoalsProgress();
 
-  const [stats, reactionsSummary, todayAppointments, pinnedNotes, activeGoals] =
-    await Promise.all([
-      getDashboardStats(profile.tenantId),
-      getActiveReactionsSummary(3),
-      getTodayAppointments(),
-      getPinnedNotesRecent(5),
-      listActiveGoals(),
-    ]);
+  const [
+    stats,
+    reactionsSummary,
+    todayAppointments,
+    pinnedNotes,
+    activeGoals,
+    unseenAchievements,
+  ] = await Promise.all([
+    getDashboardStats(profile.tenantId),
+    getActiveReactionsSummary(3),
+    getTodayAppointments(),
+    getPinnedNotesRecent(5),
+    listActiveGoals(),
+    listUnseenAchievements(),
+  ]);
   const firstName = getFirstName(profile.fullName ?? profile.email);
   const revenue = formatRevenue(stats.monthlyRevenue);
 
@@ -134,6 +142,8 @@ export default async function DashboardPage() {
           Aqui está o resumo do seu dia
         </p>
       </header>
+
+      <UnseenAchievementsCard achievements={unseenAchievements} />
 
       <OnboardingChecklist status={onboarding} />
 

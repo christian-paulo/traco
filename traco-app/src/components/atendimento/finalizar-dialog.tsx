@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
 import { toast } from 'sonner';
 
+import { ACHIEVEMENT_META } from '@/lib/validations/goal';
+
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -97,6 +99,17 @@ export function FinalizarDialog({
       });
       if (result.success) {
         toast.success('Atendimento finalizado.');
+        for (const t of result.data.newAchievements) {
+          const meta = ACHIEVEMENT_META[t];
+          toast(`${meta.icon} Nova conquista: ${meta.label}`, {
+            description: meta.description,
+            duration: 5000,
+            action: {
+              label: 'Ver',
+              onClick: () => router.push('/dashboard/metas'),
+            },
+          });
+        }
         onOpenChange(false);
         router.push('/dashboard/agenda');
       } else {

@@ -6,7 +6,10 @@ import { GoalCard } from '@/components/goals/goal-card';
 import { NewGoalButton } from '@/components/goals/new-goal-button';
 import { Card, CardContent } from '@/components/ui/card';
 import { listAchievements, listAllGoals } from '@/lib/queries/goals';
-import { refreshAllGoalsProgress } from '@/server/actions/goals';
+import {
+  markAchievementsSeen,
+  refreshAllGoalsProgress,
+} from '@/server/actions/goals';
 
 export const metadata: Metadata = {
   title: 'Metas',
@@ -15,6 +18,8 @@ export const metadata: Metadata = {
 export default async function MetasPage() {
   // Garante que current_value está atualizado pra cada visita
   await refreshAllGoalsProgress();
+  // Marca conquistas como vistas — se chegou aqui, designer já viu
+  await markAchievementsSeen();
 
   const [goals, achievements] = await Promise.all([
     listAllGoals(),
@@ -80,7 +85,7 @@ export default async function MetasPage() {
         </section>
       ) : null}
 
-      <section className="flex flex-col gap-4">
+      <section id="conquistas" className="flex flex-col gap-4 scroll-mt-6">
         <div className="flex flex-col gap-1">
           <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
             Conquistas

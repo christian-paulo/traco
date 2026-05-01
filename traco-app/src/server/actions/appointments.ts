@@ -3,7 +3,9 @@
 import { revalidatePath } from 'next/cache';
 
 import { sendPostAttendanceEmail } from '@/lib/email';
+import type { AchievementType } from '@/lib/validations/goal';
 import {
+  detectActivityAchievements,
   evaluateAbsoluteAchievements,
   evaluateGoalMilestones,
 } from '@/server/actions/achievements';
@@ -20,6 +22,9 @@ import {
 
 type SimpleResult = { success: true } | { success: false; error: string };
 type CreateResult = { success: true; data: { id: string } } | { success: false; error: string };
+type FinalizeResult =
+  | { success: true; data: { newAchievements: AchievementType[] } }
+  | { success: false; error: string };
 
 function flattenZodErrors(error: import('zod').ZodError): string {
   return error.issues.map((i) => i.message).join(' ');
@@ -205,7 +210,7 @@ const DEFAULT_POST_CARE = [
 export async function finalizeAppointment(
   appointmentId: string,
   input: FinalizeInput,
-): Promise<SimpleResult> {
+): Promise<FinalizeResult> {
   const profile = await getCurrentProfile();
   if (!profile) return { success: false, error: 'Sessão expirada.' };
   const supabase = await createClient();
@@ -273,14 +278,19 @@ export async function finalizeAppointment(
     }
   }
 
-  // Goals + achievements (o trigger SQL já recalculou current_value via RLS bypass)
+  // Goals + achievements (await pra retornar tipos novos pro client toastar)
+  let newAchievements: AchievementType[] = [];
   if (input.status === 'completed') {
-    void evaluateGoalMilestones(profile.tenantId).catch((err) =>
-      console.error('[finalize] evaluateGoalMilestones:', err),
-    );
-    void evaluateAbsoluteAchievements(profile.tenantId).catch((err) =>
-      console.error('[finalize] evaluateAbsoluteAchievements:', err),
-    );
+    try {
+      const [milestones, absolutes, activity] = await Promise.all([
+        evaluateGoalMilestones(profile.tenantId),
+        evaluateAbsoluteAchievements(profile.tenantId),
+        detectActivityAchievements(profile.tenantId),
+      ]);
+      newAchievements = [...milestones, ...absolutes, ...activity];
+    } catch (err) {
+      console.error('[finalize] achievements:', err);
+    }
   }
 
   revalidatePath('/dashboard/agenda');
@@ -288,5 +298,5 @@ export async function finalizeAppointment(
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/metas');
   if (row?.client_id) revalidatePath(`/dashboard/clientes/${row.client_id}`);
-  return { success: true };
+  return { success: true, data: { newAchievements } };
 }

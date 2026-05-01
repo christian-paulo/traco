@@ -36,7 +36,19 @@ export type AchievementRow = {
   earned_at: string;
   context_data: Record<string, unknown> | null;
   shared: boolean;
+  seen_at: string | null;
 };
+
+export async function listUnseenAchievements(): Promise<AchievementRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('achievements')
+    .select('*')
+    .is('seen_at', null)
+    .order('earned_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as unknown as AchievementRow[];
+}
 
 function castGoal(raw: Record<string, unknown>): GoalRow {
   return {

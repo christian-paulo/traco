@@ -150,3 +150,17 @@ export async function markAchievementShared(
   revalidatePath('/dashboard/metas');
   return { success: true };
 }
+
+export async function markAchievementsSeen(): Promise<SimpleResult> {
+  const profile = await getCurrentProfile();
+  if (!profile) return { success: false, error: 'Sessão expirada.' };
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('achievements')
+    .update({ seen_at: new Date().toISOString() })
+    .is('seen_at', null);
+  if (error) return { success: false, error: error.message };
+  revalidatePath('/dashboard/metas');
+  revalidatePath('/dashboard');
+  return { success: true };
+}

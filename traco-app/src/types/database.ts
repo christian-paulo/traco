@@ -45,6 +45,7 @@ export type Database = {
           earned_at: string
           goal_id: string | null
           id: string
+          seen_at: string | null
           shared: boolean
           tenant_id: string
           type: Database["public"]["Enums"]["achievement_type"]
@@ -54,6 +55,7 @@ export type Database = {
           earned_at?: string
           goal_id?: string | null
           id?: string
+          seen_at?: string | null
           shared?: boolean
           tenant_id: string
           type: Database["public"]["Enums"]["achievement_type"]
@@ -63,6 +65,7 @@ export type Database = {
           earned_at?: string
           goal_id?: string | null
           id?: string
+          seen_at?: string | null
           shared?: boolean
           tenant_id?: string
           type?: Database["public"]["Enums"]["achievement_type"]
