@@ -20,7 +20,6 @@ import {
 } from '@/lib/queries/dashboard';
 import { listRecurringExpensesCreatedToday } from '@/lib/queries/expenses';
 import { listActiveGoals, listUnseenAchievements } from '@/lib/queries/goals';
-import { refreshAllGoalsProgress } from '@/server/actions/goals';
 import { getCurrentProfile } from '@/lib/queries/profile';
 import { createClient } from '@/lib/supabase/server';
 import { cn } from '@/lib/utils';
@@ -84,9 +83,11 @@ export default async function DashboardPage() {
   const profile = await getCurrentProfile();
   if (!profile) redirect('/login');
 
-  // Recalcula goals antes de buscar (idempotente)
-  await refreshAllGoalsProgress();
+  // Goals são mantidos atualizados pelo trigger SQL appointments_refresh_goals
+  // (migration 06) + finalizeAppointment + createClient + cron diário.
+  // Não precisa refresh durante render — economiza ~5 queries sequenciais por load.
 
+  const supabase = await createClient();
   const [
     stats,
     reactionsSummary,
@@ -95,6 +96,10 @@ export default async function DashboardPage() {
     activeGoals,
     unseenAchievements,
     recurringExpensesToday,
+    profileRowResult,
+    appointmentsHeadResult,
+    fichaHeadResult,
+    customProcedureResult,
   ] = await Promise.all([
     getDashboardStats(profile.tenantId),
     getActiveReactionsSummary(3),
@@ -103,17 +108,6 @@ export default async function DashboardPage() {
     listActiveGoals(),
     listUnseenAchievements(),
     listRecurringExpensesCreatedToday(),
-  ]);
-  const firstName = getFirstName(profile.fullName ?? profile.email);
-  const revenue = formatRevenue(stats.monthlyRevenue);
-
-  const supabase = await createClient();
-  const [
-    { data: profileRow },
-    { data: appointmentsHead },
-    { data: fichaHead },
-    { data: customProcedure },
-  ] = await Promise.all([
     supabase.from('profiles').select('phone').eq('id', profile.id).maybeSingle(),
     supabase.from('appointments').select('id').limit(1),
     supabase.from('anamnesis_forms').select('id').limit(1),
@@ -123,6 +117,12 @@ export default async function DashboardPage() {
       .order('updated_at', { ascending: false })
       .limit(1),
   ]);
+  const firstName = getFirstName(profile.fullName ?? profile.email);
+  const revenue = formatRevenue(stats.monthlyRevenue);
+  const profileRow = profileRowResult.data;
+  const appointmentsHead = appointmentsHeadResult.data;
+  const fichaHead = fichaHeadResult.data;
+  const customProcedure = customProcedureResult.data;
 
   const onboarding: OnboardingStatus = {
     hasClient: stats.totalClients > 0,

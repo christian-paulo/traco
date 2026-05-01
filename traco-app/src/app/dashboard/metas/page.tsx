@@ -17,13 +17,12 @@ export const metadata: Metadata = {
 };
 
 export default async function MetasPage() {
-  // Garante que current_value está atualizado pra cada visita
-  await refreshAllGoalsProgress();
-  // Marca conquistas como vistas — se chegou aqui, designer já viu.
-  // Versão inline (sem revalidatePath) pra não conflitar com render do page.
-  await markAllAchievementsSeenInline();
-
-  const [goals, achievements] = await Promise.all([
+  // Refresh + mark seen rodam em paralelo com as listagens — economiza ~2x latência.
+  // Caso raro: primeira visita após edição externa pode mostrar valores ligeiramente
+  // stale, mas o trigger SQL já mantém a maioria dos casos atualizada.
+  const [, , goals, achievements] = await Promise.all([
+    refreshAllGoalsProgress(),
+    markAllAchievementsSeenInline(),
     listAllGoals(),
     listAchievements(),
   ]);
