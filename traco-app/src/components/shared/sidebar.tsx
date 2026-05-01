@@ -7,6 +7,7 @@ import {
   Inbox,
   LayoutDashboard,
   LogOut,
+  Receipt,
   Settings,
   TrendingUp,
   Users,
@@ -40,6 +41,7 @@ const NAV: NavItem[] = [
   { label: 'Atendimentos', href: '/dashboard/atendimentos', icon: CalendarCheck },
   { label: 'Recuperar', href: '/dashboard/recuperar', icon: Clock },
   { label: 'Financeiro', href: '/dashboard/financeiro', icon: TrendingUp },
+  { label: 'Despesas', href: '/dashboard/despesas', icon: Receipt },
   { label: 'Configurações', href: '/dashboard/configuracoes', icon: Settings },
 ];
 

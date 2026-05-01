@@ -1,6 +1,8 @@
 import {
+  ArrowDown,
   CalendarCheck,
   Crown,
+  PiggyBank,
   Receipt,
   TrendingUp,
 } from 'lucide-react';
@@ -9,9 +11,11 @@ import Link from 'next/link';
 
 import { DateRangePicker } from '@/components/financial/date-range-picker';
 import { DayOfWeekChart } from '@/components/financial/day-of-week-chart';
+import { ExpensesPieChart } from '@/components/financial/expenses-pie-chart';
 import { MetricCard } from '@/components/financial/metric-card';
 import { ProcedurePieChart } from '@/components/financial/procedure-pie-chart';
 import { RevenueLineChart } from '@/components/financial/revenue-line-chart';
+import { RevenueVsExpenseChart } from '@/components/financial/revenue-vs-expense-chart';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -24,12 +28,17 @@ import {
 } from '@/components/ui/table';
 import { formatCurrency, formatRelativeDate, getInitials } from '@/lib/format';
 import {
+  getExpenseSummary,
+  getMonthlyExpenseComparison,
+} from '@/lib/queries/expenses';
+import {
   getMonthlyRevenueComparison,
   getRevenueByDayOfWeek,
   getRevenueComparison,
   getRevenueOverview,
   getTopClients,
 } from '@/lib/queries/financial';
+import { cn } from '@/lib/utils';
 
 export const metadata: Metadata = {
   title: 'Financeiro',
@@ -59,13 +68,37 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: S
   const fromIso = `${dateFrom}T00:00:00.000Z`;
   const toIso = `${dateTo}T23:59:59.999Z`;
 
-  const [overview, comparison, monthly, topClients, byDay] = await Promise.all([
+  const [
+    overview,
+    comparison,
+    monthly,
+    topClients,
+    byDay,
+    expenseSummary,
+    monthlyExpenses,
+  ] = await Promise.all([
     getRevenueOverview({ from: fromIso, to: toIso }),
     getRevenueComparison({ from: fromIso, to: toIso }),
     getMonthlyRevenueComparison(6),
     getTopClients({ limit: 10, from: fromIso, to: toIso }),
     getRevenueByDayOfWeek({ from: fromIso, to: toIso }),
+    getExpenseSummary({ from: dateFrom, to: dateTo }),
+    getMonthlyExpenseComparison(6),
   ]);
+
+  // Receita vs despesa por mês (combina os dois arrays)
+  const expenseByMonth = new Map(monthlyExpenses.map((e) => [e.month, e.amount]));
+  const comparisonChart = monthly.map((m) => {
+    const expenses = expenseByMonth.get(m.month) ?? 0;
+    const profit = m.revenue - expenses;
+    return { label: m.label, revenue: m.revenue, expenses, profit };
+  });
+
+  const profit = overview.totalRevenue - expenseSummary.total;
+  const margin =
+    overview.totalRevenue > 0 ? (profit / overview.totalRevenue) * 100 : 0;
+  const marginTone =
+    margin >= 50 ? 'positive' : margin >= 30 ? 'neutral' : 'negative';
 
   const revenueParts = (() => {
     const formatted = formatCurrency(overview.totalRevenue);
@@ -126,6 +159,87 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: S
         />
       </section>
 
+      {/* SEÇÃO 1B — Receita vs despesa + lucro + margem */}
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <Card variant="premium" className="bg-card border-0 ring-1 ring-emerald-200 py-6">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 px-6 pb-2">
+            <CardTitle className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+              Receita
+            </CardTitle>
+            <TrendingUp className="size-4 text-emerald-600" />
+          </CardHeader>
+          <CardContent className="px-6">
+            <p className="font-serif text-3xl font-medium text-emerald-700">
+              {formatCurrency(overview.totalRevenue)}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card variant="premium" className="bg-card border-0 ring-1 ring-red-200 py-6">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 px-6 pb-2">
+            <CardTitle className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+              Despesa
+            </CardTitle>
+            <ArrowDown className="size-4 text-red-600" />
+          </CardHeader>
+          <CardContent className="px-6">
+            <p className="font-serif text-3xl font-medium text-red-700">
+              {formatCurrency(expenseSummary.total)}
+            </p>
+            {expenseSummary.topCategory ? (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Maior: {expenseSummary.topCategory.label}
+              </p>
+            ) : null}
+          </CardContent>
+        </Card>
+
+        <Card
+          variant="premium"
+          className={cn(
+            'bg-card border-0 py-6',
+            marginTone === 'positive'
+              ? 'ring-1 ring-emerald-300'
+              : marginTone === 'neutral'
+                ? 'ring-1 ring-amber-300'
+                : 'ring-1 ring-red-300',
+          )}
+        >
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 px-6 pb-2">
+            <CardTitle className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+              Margem de lucro
+            </CardTitle>
+            <PiggyBank
+              className={cn(
+                'size-4',
+                marginTone === 'positive'
+                  ? 'text-emerald-600'
+                  : marginTone === 'neutral'
+                    ? 'text-amber-600'
+                    : 'text-red-600',
+              )}
+            />
+          </CardHeader>
+          <CardContent className="px-6">
+            <p
+              className={cn(
+                'font-serif text-3xl font-medium',
+                marginTone === 'positive'
+                  ? 'text-emerald-700'
+                  : marginTone === 'neutral'
+                    ? 'text-amber-700'
+                    : 'text-red-700',
+              )}
+            >
+              {overview.totalRevenue > 0 ? `${margin.toFixed(1)}%` : '—'}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Lucro {formatCurrency(profit)}
+            </p>
+          </CardContent>
+        </Card>
+      </section>
+
       {/* SEÇÃO 2 — Gráficos */}
       <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card variant="premium" className="bg-card border-0 ring-1 ring-[var(--border)] py-6">
@@ -151,6 +265,42 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: S
           </CardHeader>
           <CardContent className="px-6 pt-2">
             <ProcedurePieChart data={overview.byProcedure} total={overview.totalRevenue} />
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* SEÇÃO 2B — Receita vs despesa por mês + Top categorias de despesa */}
+      <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Card variant="premium" className="bg-card border-0 ring-1 ring-[var(--border)] py-6">
+          <CardHeader className="px-6 pb-2">
+            <div className="mb-3 h-px w-6 bg-[var(--gold)]" />
+            <CardTitle className="font-serif text-xl font-medium">
+              Receita vs despesa
+            </CardTitle>
+            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+              Últimos 6 meses
+            </p>
+          </CardHeader>
+          <CardContent className="px-2 pt-2 sm:px-4">
+            <RevenueVsExpenseChart data={comparisonChart} />
+          </CardContent>
+        </Card>
+
+        <Card variant="premium" className="bg-card border-0 ring-1 ring-[var(--border)] py-6">
+          <CardHeader className="px-6 pb-2">
+            <div className="mb-3 h-px w-6 bg-[var(--gold)]" />
+            <CardTitle className="font-serif text-xl font-medium">
+              Top categorias de despesa
+            </CardTitle>
+            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+              No período selecionado
+            </p>
+          </CardHeader>
+          <CardContent className="px-6 pt-2">
+            <ExpensesPieChart
+              data={expenseSummary.byCategory}
+              total={expenseSummary.total}
+            />
           </CardContent>
         </Card>
       </section>

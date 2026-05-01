@@ -640,6 +640,121 @@ export type Database = {
           },
         ]
       }
+      expense_recurrences: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          next_due_date: string
+          parent_expense_id: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          next_due_date: string
+          parent_expense_id: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          next_due_date?: string
+          parent_expense_id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_recurrences_parent_expense_id_fkey"
+            columns: ["parent_expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_recurrences_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expenses: {
+        Row: {
+          amount: number
+          category: Database["public"]["Enums"]["expense_category"]
+          created_at: string
+          created_by: string | null
+          date: string
+          description: string
+          id: string
+          is_recurring: boolean
+          linked_product_id: string | null
+          notes: string | null
+          receipt_url: string | null
+          recurrence_pattern: Json | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          category?: Database["public"]["Enums"]["expense_category"]
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          description: string
+          id?: string
+          is_recurring?: boolean
+          linked_product_id?: string | null
+          notes?: string | null
+          receipt_url?: string | null
+          recurrence_pattern?: Json | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category?: Database["public"]["Enums"]["expense_category"]
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          description?: string
+          id?: string
+          is_recurring?: boolean
+          linked_product_id?: string | null
+          notes?: string | null
+          receipt_url?: string | null
+          recurrence_pattern?: Json | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_linked_product_id_fkey"
+            columns: ["linked_product_id"]
+            isOneToOne: false
+            referencedRelation: "favorite_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       favorite_products: {
         Row: {
           brand: string
@@ -1296,7 +1411,14 @@ export type Database = {
       tenant_id: { Args: never; Returns: string }
     }
     Enums: {
-      [_ in never]: never
+      expense_category:
+        | "products"
+        | "rent"
+        | "marketing"
+        | "transport"
+        | "equipment"
+        | "tax"
+        | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1426,6 +1548,16 @@ export const Constants = {
     Enums: {},
   },
   public: {
-    Enums: {},
+    Enums: {
+      expense_category: [
+        "products",
+        "rent",
+        "marketing",
+        "transport",
+        "equipment",
+        "tax",
+        "other",
+      ],
+    },
   },
 } as const
