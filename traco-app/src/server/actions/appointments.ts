@@ -3,6 +3,10 @@
 import { revalidatePath } from 'next/cache';
 
 import { sendPostAttendanceEmail } from '@/lib/email';
+import {
+  evaluateAbsoluteAchievements,
+  evaluateGoalMilestones,
+} from '@/server/actions/achievements';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { getCurrentProfessional } from '@/lib/queries/studio';
 import { getCurrentProfile } from '@/lib/queries/profile';
@@ -269,9 +273,20 @@ export async function finalizeAppointment(
     }
   }
 
+  // Goals + achievements (o trigger SQL já recalculou current_value via RLS bypass)
+  if (input.status === 'completed') {
+    void evaluateGoalMilestones(profile.tenantId).catch((err) =>
+      console.error('[finalize] evaluateGoalMilestones:', err),
+    );
+    void evaluateAbsoluteAchievements(profile.tenantId).catch((err) =>
+      console.error('[finalize] evaluateAbsoluteAchievements:', err),
+    );
+  }
+
   revalidatePath('/dashboard/agenda');
   revalidatePath('/dashboard/atendimentos');
   revalidatePath('/dashboard');
+  revalidatePath('/dashboard/metas');
   if (row?.client_id) revalidatePath(`/dashboard/clientes/${row.client_id}`);
   return { success: true };
 }

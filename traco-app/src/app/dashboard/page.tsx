@@ -2,6 +2,7 @@ import { AlertCircle, CalendarCheck, TrendingUp, Users, type LucideIcon } from '
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
+import { ActiveGoalsCard } from '@/components/dashboard/active-goals-card';
 import { ActiveReactionsCard } from '@/components/dashboard/active-reactions-card';
 import { PinnedNotesCard } from '@/components/dashboard/pinned-notes-card';
 import { TodayAppointmentsCard } from '@/components/dashboard/today-appointments-card';
@@ -15,6 +16,8 @@ import {
   getPinnedNotesRecent,
   getTodayAppointments,
 } from '@/lib/queries/dashboard';
+import { listActiveGoals } from '@/lib/queries/goals';
+import { refreshAllGoalsProgress } from '@/server/actions/goals';
 import { getCurrentProfile } from '@/lib/queries/profile';
 import { createClient } from '@/lib/supabase/server';
 import { cn } from '@/lib/utils';
@@ -78,12 +81,17 @@ export default async function DashboardPage() {
   const profile = await getCurrentProfile();
   if (!profile) redirect('/login');
 
-  const [stats, reactionsSummary, todayAppointments, pinnedNotes] = await Promise.all([
-    getDashboardStats(profile.tenantId),
-    getActiveReactionsSummary(3),
-    getTodayAppointments(),
-    getPinnedNotesRecent(5),
-  ]);
+  // Recalcula goals antes de buscar (idempotente)
+  await refreshAllGoalsProgress();
+
+  const [stats, reactionsSummary, todayAppointments, pinnedNotes, activeGoals] =
+    await Promise.all([
+      getDashboardStats(profile.tenantId),
+      getActiveReactionsSummary(3),
+      getTodayAppointments(),
+      getPinnedNotesRecent(5),
+      listActiveGoals(),
+    ]);
   const firstName = getFirstName(profile.fullName ?? profile.email);
   const revenue = formatRevenue(stats.monthlyRevenue);
 
@@ -167,7 +175,8 @@ export default async function DashboardPage() {
         />
       </section>
 
-      <section className="grid grid-cols-1 gap-4">
+      <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <ActiveGoalsCard goals={activeGoals} />
         <PinnedNotesCard notes={pinnedNotes} />
       </section>
 

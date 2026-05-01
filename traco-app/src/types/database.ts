@@ -39,6 +39,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      achievements: {
+        Row: {
+          context_data: Json | null
+          earned_at: string
+          goal_id: string | null
+          id: string
+          shared: boolean
+          tenant_id: string
+          type: Database["public"]["Enums"]["achievement_type"]
+        }
+        Insert: {
+          context_data?: Json | null
+          earned_at?: string
+          goal_id?: string | null
+          id?: string
+          shared?: boolean
+          tenant_id: string
+          type: Database["public"]["Enums"]["achievement_type"]
+        }
+        Update: {
+          context_data?: Json | null
+          earned_at?: string
+          goal_id?: string | null
+          id?: string
+          shared?: boolean
+          tenant_id?: string
+          type?: Database["public"]["Enums"]["achievement_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "achievements_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "achievements_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       anamnesis_form_versions: {
         Row: {
           answers: Json
@@ -796,6 +841,84 @@ export type Database = {
           },
         ]
       }
+      goals: {
+        Row: {
+          achieved_at: string | null
+          ai_strategy_generated_at: string | null
+          ai_strategy_text: string | null
+          created_at: string
+          created_by: string | null
+          current_value: number
+          description: string | null
+          end_date: string
+          id: string
+          milestones_reached: number
+          period_type: Database["public"]["Enums"]["goal_period"]
+          start_date: string
+          status: Database["public"]["Enums"]["goal_status"]
+          target_value: number
+          tenant_id: string
+          title: string
+          type: Database["public"]["Enums"]["goal_type"]
+          updated_at: string
+        }
+        Insert: {
+          achieved_at?: string | null
+          ai_strategy_generated_at?: string | null
+          ai_strategy_text?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_value?: number
+          description?: string | null
+          end_date: string
+          id?: string
+          milestones_reached?: number
+          period_type: Database["public"]["Enums"]["goal_period"]
+          start_date: string
+          status?: Database["public"]["Enums"]["goal_status"]
+          target_value: number
+          tenant_id: string
+          title: string
+          type: Database["public"]["Enums"]["goal_type"]
+          updated_at?: string
+        }
+        Update: {
+          achieved_at?: string | null
+          ai_strategy_generated_at?: string | null
+          ai_strategy_text?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_value?: number
+          description?: string | null
+          end_date?: string
+          id?: string
+          milestones_reached?: number
+          period_type?: Database["public"]["Enums"]["goal_period"]
+          start_date?: string
+          status?: Database["public"]["Enums"]["goal_status"]
+          target_value?: number
+          tenant_id?: string
+          title?: string
+          type?: Database["public"]["Enums"]["goal_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goals_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "goals_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       photos: {
         Row: {
           client_id: string
@@ -1408,9 +1531,25 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      refresh_active_goals: { Args: { p_tenant_id: string }; Returns: number }
       tenant_id: { Args: never; Returns: string }
+      update_goal_progress: { Args: { p_goal_id: string }; Returns: number }
     }
     Enums: {
+      achievement_type:
+        | "first_client"
+        | "tenth_client"
+        | "hundredth_client"
+        | "first_recovery"
+        | "streak_7"
+        | "streak_30"
+        | "monthly_record"
+        | "goal_25"
+        | "goal_50"
+        | "goal_75"
+        | "goal_100"
+        | "big_recovery"
+        | "first_month_pro"
       expense_category:
         | "products"
         | "rent"
@@ -1419,6 +1558,14 @@ export type Database = {
         | "equipment"
         | "tax"
         | "other"
+      goal_period: "week" | "month" | "quarter" | "year"
+      goal_status: "active" | "achieved" | "failed" | "cancelled"
+      goal_type:
+        | "revenue"
+        | "appointments"
+        | "new_clients"
+        | "recovered_clients"
+        | "custom"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1549,6 +1696,21 @@ export const Constants = {
   },
   public: {
     Enums: {
+      achievement_type: [
+        "first_client",
+        "tenth_client",
+        "hundredth_client",
+        "first_recovery",
+        "streak_7",
+        "streak_30",
+        "monthly_record",
+        "goal_25",
+        "goal_50",
+        "goal_75",
+        "goal_100",
+        "big_recovery",
+        "first_month_pro",
+      ],
       expense_category: [
         "products",
         "rent",
@@ -1557,6 +1719,15 @@ export const Constants = {
         "equipment",
         "tax",
         "other",
+      ],
+      goal_period: ["week", "month", "quarter", "year"],
+      goal_status: ["active", "achieved", "failed", "cancelled"],
+      goal_type: [
+        "revenue",
+        "appointments",
+        "new_clients",
+        "recovered_clients",
+        "custom",
       ],
     },
   },

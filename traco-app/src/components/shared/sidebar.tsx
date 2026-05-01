@@ -9,6 +9,7 @@ import {
   LogOut,
   Receipt,
   Settings,
+  Target,
   TrendingUp,
   Users,
   type LucideIcon,
@@ -42,6 +43,7 @@ const NAV: NavItem[] = [
   { label: 'Recuperar', href: '/dashboard/recuperar', icon: Clock },
   { label: 'Financeiro', href: '/dashboard/financeiro', icon: TrendingUp },
   { label: 'Despesas', href: '/dashboard/despesas', icon: Receipt },
+  { label: 'Metas', href: '/dashboard/metas', icon: Target },
   { label: 'Configurações', href: '/dashboard/configuracoes', icon: Settings },
 ];
 

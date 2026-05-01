@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 
 import { sendRecoveryEmail as sendRecoveryEmailRaw } from '@/lib/email';
+import { evaluateAbsoluteAchievements } from '@/server/actions/achievements';
 import { getCurrentProfile } from '@/lib/queries/profile';
 import { createClient } from '@/lib/supabase/server';
 import { digitsOnly, formatPhoneBR } from '@/lib/utils/phone';
@@ -44,8 +45,13 @@ export async function createClientRecord(input: ClientFormInput): Promise<Create
     return { success: false, error: error?.message ?? 'Erro ao cadastrar cliente.' };
   }
 
+  void evaluateAbsoluteAchievements(profile.tenantId).catch((err) =>
+    console.error('[createClient] evaluateAbsoluteAchievements:', err),
+  );
+
   revalidatePath('/dashboard/clientes');
   revalidatePath('/dashboard');
+  revalidatePath('/dashboard/metas');
   return { success: true, data: { id: data.id } };
 }
 
