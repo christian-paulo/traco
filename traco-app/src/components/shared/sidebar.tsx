@@ -4,6 +4,7 @@ import {
   Calendar,
   CalendarCheck,
   Clock,
+  GraduationCap,
   Inbox,
   LayoutDashboard,
   LogOut,
@@ -46,6 +47,7 @@ const NAV: NavItem[] = [
   { label: 'Despesas', href: '/dashboard/despesas', icon: Receipt },
   { label: 'Metas', href: '/dashboard/metas', icon: Target },
   { label: 'Compartilhar', href: '/dashboard/compartilhar', icon: Share2 },
+  { label: 'Academia', href: '/dashboard/academia', icon: GraduationCap },
   { label: 'Configurações', href: '/dashboard/configuracoes', icon: Settings },
 ];
 

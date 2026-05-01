@@ -62,7 +62,12 @@ export type AchievementType =
   | 'goal_75'
   | 'goal_100'
   | 'big_recovery'
-  | 'first_month_pro';
+  | 'first_month_pro'
+  | 'first_lesson_completed'
+  | 'first_course_completed'
+  | 'lessons_5_in_week'
+  | 'engaged_student'
+  | 'founder_traco';
 
 export const ACHIEVEMENT_META: Record<
   AchievementType,
@@ -116,5 +121,30 @@ export const ACHIEVEMENT_META: Record<
     label: 'Primeiro mês profissional',
     description: 'Mês completo usando o Traço como prontuário.',
     icon: '✨',
+  },
+  first_lesson_completed: {
+    label: 'Primeira aula',
+    description: 'Concluiu a primeira aula da Academia Traço.',
+    icon: '🎓',
+  },
+  first_course_completed: {
+    label: 'Primeiro curso',
+    description: 'Curso inteiro concluído.',
+    icon: '📜',
+  },
+  lessons_5_in_week: {
+    label: '5 aulas na semana',
+    description: 'Maratona de aprendizado.',
+    icon: '📚',
+  },
+  engaged_student: {
+    label: 'Aluna engajada',
+    description: '50% ou mais de progresso na Academia.',
+    icon: '🌟',
+  },
+  founder_traco: {
+    label: 'Founder Traço',
+    description: 'Uma das primeiras 100 alunas do Traço.',
+    icon: '👑',
   },
 };

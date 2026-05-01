@@ -685,6 +685,80 @@ export type Database = {
           },
         ]
       }
+      course_announcements: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          linked_lesson_id: string | null
+          published_at: string | null
+          title: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          linked_lesson_id?: string | null
+          published_at?: string | null
+          title: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          linked_lesson_id?: string | null
+          published_at?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_announcements_linked_lesson_id_fkey"
+            columns: ["linked_lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      courses: {
+        Row: {
+          cover_image_url: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_published: boolean
+          required_plan: Database["public"]["Enums"]["course_plan"]
+          slug: string
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_published?: boolean
+          required_plan?: Database["public"]["Enums"]["course_plan"]
+          slug: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_published?: boolean
+          required_plan?: Database["public"]["Enums"]["course_plan"]
+          slug?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       expense_recurrences: {
         Row: {
           created_at: string
@@ -972,6 +1046,104 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lesson_progress: {
+        Row: {
+          completed: boolean
+          completed_at: string | null
+          id: string
+          last_position_seconds: number
+          lesson_id: string
+          tenant_id: string
+          updated_at: string
+          watched_seconds: number
+        }
+        Insert: {
+          completed?: boolean
+          completed_at?: string | null
+          id?: string
+          last_position_seconds?: number
+          lesson_id: string
+          tenant_id: string
+          updated_at?: string
+          watched_seconds?: number
+        }
+        Update: {
+          completed?: boolean
+          completed_at?: string | null
+          id?: string
+          last_position_seconds?: number
+          lesson_id?: string
+          tenant_id?: string
+          updated_at?: string
+          watched_seconds?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_progress_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_progress_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lessons: {
+        Row: {
+          course_id: string
+          created_at: string
+          description: string | null
+          duration_seconds: number
+          id: string
+          is_published: boolean
+          resources_urls: Json
+          sort_order: number
+          title: string
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          description?: string | null
+          duration_seconds?: number
+          id?: string
+          is_published?: boolean
+          resources_urls?: Json
+          sort_order?: number
+          title: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          description?: string | null
+          duration_seconds?: number
+          id?: string
+          is_published?: boolean
+          resources_urls?: Json
+          sort_order?: number
+          title?: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lessons_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
             referencedColumns: ["id"]
           },
         ]
@@ -1285,6 +1457,7 @@ export type Database = {
           full_name: string | null
           id: string
           phone: string | null
+          role: string
           tenant_id: string
           updated_at: string
         }
@@ -1295,6 +1468,7 @@ export type Database = {
           full_name?: string | null
           id: string
           phone?: string | null
+          role?: string
           tenant_id: string
           updated_at?: string
         }
@@ -1305,6 +1479,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           phone?: string | null
+          role?: string
           tenant_id?: string
           updated_at?: string
         }
@@ -1654,6 +1829,12 @@ export type Database = {
         | "goal_100"
         | "big_recovery"
         | "first_month_pro"
+        | "first_lesson_completed"
+        | "first_course_completed"
+        | "lessons_5_in_week"
+        | "engaged_student"
+        | "founder_traco"
+      course_plan: "free" | "pro" | "studio"
       expense_category:
         | "products"
         | "rent"
@@ -1822,7 +2003,13 @@ export const Constants = {
         "goal_100",
         "big_recovery",
         "first_month_pro",
+        "first_lesson_completed",
+        "first_course_completed",
+        "lessons_5_in_week",
+        "engaged_student",
+        "founder_traco",
       ],
+      course_plan: ["free", "pro", "studio"],
       expense_category: [
         "products",
         "rent",
