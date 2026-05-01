@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { ActiveGoalsCard } from '@/components/dashboard/active-goals-card';
 import { ActiveReactionsCard } from '@/components/dashboard/active-reactions-card';
 import { PinnedNotesCard } from '@/components/dashboard/pinned-notes-card';
+import { RecurringExpensesCard } from '@/components/dashboard/recurring-expenses-card';
 import { TodayAppointmentsCard } from '@/components/dashboard/today-appointments-card';
 import { SeedTrigger } from '@/components/dashboard/seed-trigger';
 import { UnseenAchievementsCard } from '@/components/dashboard/unseen-achievements-card';
@@ -17,6 +18,7 @@ import {
   getPinnedNotesRecent,
   getTodayAppointments,
 } from '@/lib/queries/dashboard';
+import { listRecurringExpensesCreatedToday } from '@/lib/queries/expenses';
 import { listActiveGoals, listUnseenAchievements } from '@/lib/queries/goals';
 import { refreshAllGoalsProgress } from '@/server/actions/goals';
 import { getCurrentProfile } from '@/lib/queries/profile';
@@ -92,6 +94,7 @@ export default async function DashboardPage() {
     pinnedNotes,
     activeGoals,
     unseenAchievements,
+    recurringExpensesToday,
   ] = await Promise.all([
     getDashboardStats(profile.tenantId),
     getActiveReactionsSummary(3),
@@ -99,6 +102,7 @@ export default async function DashboardPage() {
     getPinnedNotesRecent(5),
     listActiveGoals(),
     listUnseenAchievements(),
+    listRecurringExpensesCreatedToday(),
   ]);
   const firstName = getFirstName(profile.fullName ?? profile.email);
   const revenue = formatRevenue(stats.monthlyRevenue);
@@ -144,6 +148,8 @@ export default async function DashboardPage() {
       </header>
 
       <UnseenAchievementsCard achievements={unseenAchievements} />
+
+      <RecurringExpensesCard expenses={recurringExpensesToday} />
 
       <OnboardingChecklist status={onboarding} />
 

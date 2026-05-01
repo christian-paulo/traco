@@ -817,6 +817,7 @@ export type Database = {
           linked_product_id: string | null
           notes: string | null
           receipt_url: string | null
+          recurrence_id: string | null
           recurrence_pattern: Json | null
           tenant_id: string
           updated_at: string
@@ -833,6 +834,7 @@ export type Database = {
           linked_product_id?: string | null
           notes?: string | null
           receipt_url?: string | null
+          recurrence_id?: string | null
           recurrence_pattern?: Json | null
           tenant_id: string
           updated_at?: string
@@ -849,6 +851,7 @@ export type Database = {
           linked_product_id?: string | null
           notes?: string | null
           receipt_url?: string | null
+          recurrence_id?: string | null
           recurrence_pattern?: Json | null
           tenant_id?: string
           updated_at?: string
@@ -866,6 +869,13 @@ export type Database = {
             columns: ["linked_product_id"]
             isOneToOne: false
             referencedRelation: "favorite_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_recurrence_id_fkey"
+            columns: ["recurrence_id"]
+            isOneToOne: false
+            referencedRelation: "expense_recurrences"
             referencedColumns: ["id"]
           },
           {

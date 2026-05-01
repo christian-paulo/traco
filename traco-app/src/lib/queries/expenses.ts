@@ -117,6 +117,28 @@ export async function getExpenseSummary(args: {
   };
 }
 
+export type RecurringExpenseCreatedToday = {
+  id: string;
+  description: string;
+  amount: number;
+  category: ExpenseCategory;
+};
+
+export async function listRecurringExpensesCreatedToday(): Promise<RecurringExpenseCreatedToday[]> {
+  const supabase = await createClient();
+  const today = new Date();
+  const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const { data } = await supabase
+    .from('expenses')
+    .select('id, description, amount, category')
+    .not('recurrence_id', 'is', null)
+    .eq('date', todayIso);
+  return ((data ?? []) as unknown as RecurringExpenseCreatedToday[]).map((r) => ({
+    ...r,
+    amount: Number(r.amount ?? 0),
+  }));
+}
+
 export async function getMonthlyExpenseComparison(months = 6): Promise<
   Array<{ month: string; label: string; amount: number }>
 > {
