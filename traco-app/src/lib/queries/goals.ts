@@ -50,6 +50,19 @@ export async function listUnseenAchievements(): Promise<AchievementRow[]> {
   return (data ?? []) as unknown as AchievementRow[];
 }
 
+/**
+ * Marca todas conquistas como vistas — versão pura (sem revalidatePath).
+ * Use durante render de page server. Para client components, prefira
+ * a server action `markAchievementsSeen` em /server/actions/goals.ts.
+ */
+export async function markAllAchievementsSeenInline(): Promise<void> {
+  const supabase = await createClient();
+  await supabase
+    .from('achievements')
+    .update({ seen_at: new Date().toISOString() })
+    .is('seen_at', null);
+}
+
 function castGoal(raw: Record<string, unknown>): GoalRow {
   return {
     ...(raw as unknown as GoalRow),
