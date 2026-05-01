@@ -9,6 +9,7 @@ import {
   LogOut,
   Receipt,
   Settings,
+  Share2,
   Target,
   TrendingUp,
   Users,
@@ -44,6 +45,7 @@ const NAV: NavItem[] = [
   { label: 'Financeiro', href: '/dashboard/financeiro', icon: TrendingUp },
   { label: 'Despesas', href: '/dashboard/despesas', icon: Receipt },
   { label: 'Metas', href: '/dashboard/metas', icon: Target },
+  { label: 'Compartilhar', href: '/dashboard/compartilhar', icon: Share2 },
   { label: 'Configurações', href: '/dashboard/configuracoes', icon: Settings },
 ];
 

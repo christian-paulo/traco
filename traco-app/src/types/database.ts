@@ -841,6 +841,63 @@ export type Database = {
           },
         ]
       }
+      generated_reports: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          image_url: string | null
+          included_fields: Json
+          period_end: string | null
+          period_start: string | null
+          report_type: Database["public"]["Enums"]["report_type"]
+          shared_at: string | null
+          storage_path: string | null
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          image_url?: string | null
+          included_fields?: Json
+          period_end?: string | null
+          period_start?: string | null
+          report_type: Database["public"]["Enums"]["report_type"]
+          shared_at?: string | null
+          storage_path?: string | null
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          image_url?: string | null
+          included_fields?: Json
+          period_end?: string | null
+          period_start?: string | null
+          report_type?: Database["public"]["Enums"]["report_type"]
+          shared_at?: string | null
+          storage_path?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generated_reports_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "generated_reports_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       goals: {
         Row: {
           achieved_at: string | null
@@ -1261,6 +1318,53 @@ export type Database = {
           },
         ]
       }
+      sharing_preferences: {
+        Row: {
+          created_at: string
+          custom_brand_color: string | null
+          default_template: Database["public"]["Enums"]["sharing_template"]
+          id: string
+          never_show_expenses: boolean
+          never_show_profit: boolean
+          never_show_revenue: boolean
+          tenant_id: string
+          updated_at: string
+          watermark_enabled: boolean
+        }
+        Insert: {
+          created_at?: string
+          custom_brand_color?: string | null
+          default_template?: Database["public"]["Enums"]["sharing_template"]
+          id?: string
+          never_show_expenses?: boolean
+          never_show_profit?: boolean
+          never_show_revenue?: boolean
+          tenant_id: string
+          updated_at?: string
+          watermark_enabled?: boolean
+        }
+        Update: {
+          created_at?: string
+          custom_brand_color?: string | null
+          default_template?: Database["public"]["Enums"]["sharing_template"]
+          id?: string
+          never_show_expenses?: boolean
+          never_show_profit?: boolean
+          never_show_revenue?: boolean
+          tenant_id?: string
+          updated_at?: string
+          watermark_enabled?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sharing_preferences_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       studios: {
         Row: {
           address: string | null
@@ -1566,6 +1670,14 @@ export type Database = {
         | "new_clients"
         | "recovered_clients"
         | "custom"
+      report_type:
+        | "daily"
+        | "weekly"
+        | "monthly"
+        | "achievement"
+        | "goal_milestone"
+        | "custom"
+      sharing_template: "minimal" | "operational" | "full"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1729,6 +1841,15 @@ export const Constants = {
         "recovered_clients",
         "custom",
       ],
+      report_type: [
+        "daily",
+        "weekly",
+        "monthly",
+        "achievement",
+        "goal_milestone",
+        "custom",
+      ],
+      sharing_template: ["minimal", "operational", "full"],
     },
   },
 } as const

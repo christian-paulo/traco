@@ -2,6 +2,7 @@ import { headers } from 'next/headers';
 import type { Metadata } from 'next';
 
 import { BookingPolicyForm } from '@/components/configuracoes/booking-policy-form';
+import { PrivacyForm } from '@/components/configuracoes/privacy-form';
 import { ProceduresList } from '@/components/configuracoes/procedures-list';
 import { ProfileForm } from '@/components/configuracoes/profile-form';
 import { StudioSettingsForm } from '@/components/configuracoes/studio-settings-form';
@@ -11,6 +12,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { listProcedures } from '@/lib/queries/procedures';
 import { getCurrentProfile } from '@/lib/queries/profile';
+import { getSharingPreferences } from '@/lib/queries/sharing';
 import {
   getCurrentProfessional,
   getCurrentStudio,
@@ -37,6 +39,7 @@ export default async function ConfiguracoesPage() {
     tenantRow,
     studio,
     professional,
+    sharingPrefs,
   ] = await Promise.all([
     listProcedures(true),
     profile
@@ -55,7 +58,26 @@ export default async function ConfiguracoesPage() {
       : Promise.resolve({ data: null }),
     getCurrentStudio(),
     getCurrentProfessional(),
+    getSharingPreferences(),
   ]);
+
+  const sharingInitial = sharingPrefs
+    ? {
+        never_show_revenue: sharingPrefs.never_show_revenue,
+        never_show_profit: sharingPrefs.never_show_profit,
+        never_show_expenses: sharingPrefs.never_show_expenses,
+        default_template: sharingPrefs.default_template,
+        watermark_enabled: sharingPrefs.watermark_enabled,
+        custom_brand_color: sharingPrefs.custom_brand_color,
+      }
+    : {
+        never_show_revenue: true,
+        never_show_profit: true,
+        never_show_expenses: true,
+        default_template: 'operational' as const,
+        watermark_enabled: true,
+        custom_brand_color: null,
+      };
 
   const [workingHours, timeOff] = professional
     ? await Promise.all([listWorkingHours(professional.id), listTimeOff(professional.id)])
@@ -126,6 +148,7 @@ export default async function ConfiguracoesPage() {
           <TabsTrigger value="procedimentos">Procedimentos</TabsTrigger>
           <TabsTrigger value="horarios">Horários</TabsTrigger>
           <TabsTrigger value="agendamento">Agendamento</TabsTrigger>
+          <TabsTrigger value="privacidade">Privacidade</TabsTrigger>
           <TabsTrigger value="personalizacao">Personalização</TabsTrigger>
         </TabsList>
 
@@ -229,6 +252,23 @@ export default async function ConfiguracoesPage() {
                   Studio não disponível. Aplique a migração 03.
                 </p>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="privacidade" className="mt-6 flex flex-col gap-5">
+          <div className="flex flex-col gap-1">
+            <h2 className="font-serif text-2xl font-medium tracking-tight text-foreground">
+              Privacidade dos posts
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Controle o que aparece nos resumos compartilháveis. Padrão é proteger
+              dados financeiros — você decide quando expor.
+            </p>
+          </div>
+          <Card variant="premium" className="bg-card border-0 ring-1 ring-[var(--border)] py-6">
+            <CardContent className="px-6">
+              <PrivacyForm initial={sharingInitial} />
             </CardContent>
           </Card>
         </TabsContent>
