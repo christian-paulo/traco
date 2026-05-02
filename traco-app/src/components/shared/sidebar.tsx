@@ -2,16 +2,11 @@
 
 import {
   Calendar,
-  CalendarCheck,
-  Clock,
   GraduationCap,
   Inbox,
   LayoutDashboard,
   LogOut,
-  Receipt,
   Settings,
-  Share2,
-  Target,
   TrendingUp,
   Users,
   type LucideIcon,
@@ -24,31 +19,44 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { signOut } from '@/server/actions/auth';
 
+type NavGroup = 'operacao' | 'negocio' | 'crescimento' | 'ajustes';
+
 type NavItem = {
   label: string;
   href: string;
   icon: LucideIcon;
   badgeKey?: 'pendingDrafts';
+  group: NavGroup;
+};
+
+const GROUP_LABELS: Record<NavGroup, string> = {
+  operacao: 'Operação',
+  negocio: 'Negócio',
+  crescimento: 'Crescimento',
+  ajustes: 'Ajustes',
 };
 
 const NAV: NavItem[] = [
-  { label: 'Início', href: '/dashboard', icon: LayoutDashboard },
-  { label: 'Agenda', href: '/dashboard/agenda', icon: Calendar },
+  // Operação — uso diário durante atendimento
+  { label: 'Início', href: '/dashboard', icon: LayoutDashboard, group: 'operacao' },
+  { label: 'Agenda', href: '/dashboard/agenda', icon: Calendar, group: 'operacao' },
   {
     label: 'Pendentes',
     href: '/dashboard/agendamentos-pendentes',
     icon: Inbox,
     badgeKey: 'pendingDrafts',
+    group: 'operacao',
   },
-  { label: 'Clientes', href: '/dashboard/clientes', icon: Users },
-  { label: 'Atendimentos', href: '/dashboard/atendimentos', icon: CalendarCheck },
-  { label: 'Recuperar', href: '/dashboard/recuperar', icon: Clock },
-  { label: 'Financeiro', href: '/dashboard/financeiro', icon: TrendingUp },
-  { label: 'Despesas', href: '/dashboard/despesas', icon: Receipt },
-  { label: 'Metas', href: '/dashboard/metas', icon: Target },
-  { label: 'Compartilhar', href: '/dashboard/compartilhar', icon: Share2 },
-  { label: 'Academia', href: '/dashboard/academia', icon: GraduationCap },
-  { label: 'Configurações', href: '/dashboard/configuracoes', icon: Settings },
+  { label: 'Clientes', href: '/dashboard/clientes', icon: Users, group: 'operacao' },
+
+  // Negócio — finanças e metas
+  { label: 'Financeiro', href: '/dashboard/financeiro', icon: TrendingUp, group: 'negocio' },
+
+  // Crescimento — capacitação e divulgação
+  { label: 'Academia', href: '/dashboard/academia', icon: GraduationCap, group: 'crescimento' },
+
+  // Ajustes
+  { label: 'Configurações', href: '/dashboard/configuracoes', icon: Settings, group: 'ajustes' },
 ];
 
 export type SidebarProfile = {
@@ -97,31 +105,44 @@ export function Sidebar({ profile, onNavigate, badges }: SidebarProps) {
         <div className="mt-6 h-px w-12 bg-[var(--gold)]/60" />
       </div>
 
-      <nav className="flex flex-col gap-1">
-        {NAV.map((item) => {
+      <nav className="flex flex-col gap-0.5">
+        {NAV.map((item, idx) => {
           const active = isActive(pathname, item.href);
           const Icon = item.icon;
+          const prev = idx > 0 ? NAV[idx - 1] : null;
+          const showGroupLabel = !prev || prev.group !== item.group;
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={onNavigate}
-              aria-current={active ? 'page' : undefined}
-              className={cn(
-                'group/nav-item relative flex items-center gap-3 rounded-r-md px-4 py-3 text-sm uppercase tracking-[0.1em] transition-colors',
-                active
-                  ? 'border-l-2 border-[var(--gold)] bg-[var(--gold)]/10 font-medium text-[var(--gold)]'
-                  : 'border-l-2 border-transparent text-white/70 hover:bg-white/5 hover:text-[var(--gold)]',
-              )}
-            >
-              <Icon className="size-[18px] shrink-0" strokeWidth={1.5} />
-              <span className="flex-1">{item.label}</span>
-              {item.badgeKey === 'pendingDrafts' && badges?.pendingDrafts ? (
-                <span className="bg-[var(--gold)] text-ink ml-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-medium tracking-normal">
-                  {badges.pendingDrafts}
-                </span>
+            <div key={item.href}>
+              {showGroupLabel ? (
+                <div
+                  className={cn(
+                    'px-4 text-[9px] font-medium uppercase tracking-[0.24em] text-white/30',
+                    idx === 0 ? 'mb-2' : 'mb-2 mt-4',
+                  )}
+                >
+                  {GROUP_LABELS[item.group]}
+                </div>
               ) : null}
-            </Link>
+              <Link
+                href={item.href}
+                onClick={onNavigate}
+                aria-current={active ? 'page' : undefined}
+                className={cn(
+                  'group/nav-item relative flex items-center gap-3 rounded-r-md px-4 py-3 text-sm uppercase tracking-[0.1em] transition-colors',
+                  active
+                    ? 'border-l-2 border-[var(--gold)] bg-[var(--gold)]/10 font-medium text-[var(--gold)]'
+                    : 'border-l-2 border-transparent text-white/70 hover:bg-white/5 hover:text-[var(--gold)]',
+                )}
+              >
+                <Icon className="size-[18px] shrink-0" strokeWidth={1.5} />
+                <span className="flex-1">{item.label}</span>
+                {item.badgeKey === 'pendingDrafts' && badges?.pendingDrafts ? (
+                  <span className="bg-[var(--gold)] text-ink ml-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-medium tracking-normal">
+                    {badges.pendingDrafts}
+                  </span>
+                ) : null}
+              </Link>
+            </div>
           );
         })}
       </nav>

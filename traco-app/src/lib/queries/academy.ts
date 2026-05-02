@@ -222,3 +222,109 @@ export async function isAdmin(): Promise<boolean> {
   const role = await getCurrentRole();
   return role === 'admin';
 }
+
+export type NextLessonForUser = {
+  courseSlug: string;
+  courseTitle: string;
+  lessonId: string;
+  lessonTitle: string;
+  resumeFromSeconds: number;
+  isResume: boolean;
+};
+
+/**
+ * Próxima aula pra mostrar no card "Continuar na Academia" do dashboard.
+ * Prioridade:
+ * 1. Aula em andamento (last_position_seconds > 0 && !completed) — "Continuar de onde parou"
+ * 2. Primeira aula não-iniciada do curso de menor sort_order — "Começar"
+ * Retorna null se todas as aulas publicadas já estão concluídas.
+ */
+export async function getNextLessonForUser(): Promise<NextLessonForUser | null> {
+  const supabase = await createClient();
+
+  type CourseLite = {
+    slug?: string;
+    title?: string;
+    sort_order?: number;
+    is_published?: boolean;
+  };
+  type LessonLite = {
+    id: string;
+    title: string;
+    course_id: string;
+    courses: CourseLite | CourseLite[] | null;
+  };
+  type ProgressLite = {
+    lesson_id: string;
+    last_position_seconds: number;
+    lessons: LessonLite | LessonLite[] | null;
+  };
+
+  // 1. Aula em andamento (não concluída + tem progresso > 0) — mais recente
+  const { data: inProgress } = await supabase
+    .from('lesson_progress')
+    .select(
+      'lesson_id, last_position_seconds, lessons(id, title, course_id, courses(slug, title, sort_order, is_published))',
+    )
+    .eq('completed', false)
+    .gt('last_position_seconds', 0)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const ip = inProgress as unknown as ProgressLite | null;
+  const ipLesson = ip ? (Array.isArray(ip.lessons) ? ip.lessons[0] : ip.lessons) : null;
+  const ipCourse = ipLesson
+    ? Array.isArray(ipLesson.courses)
+      ? ipLesson.courses[0]
+      : ipLesson.courses
+    : null;
+  if (ip && ipLesson && ipCourse?.is_published && ipCourse.slug && ipCourse.title) {
+    return {
+      courseSlug: ipCourse.slug,
+      courseTitle: ipCourse.title,
+      lessonId: ipLesson.id,
+      lessonTitle: ipLesson.title,
+      resumeFromSeconds: ip.last_position_seconds ?? 0,
+      isResume: true,
+    };
+  }
+
+  // 2. Primeira aula não-concluída do primeiro curso publicado
+  const { data: courses } = await supabase
+    .from('courses')
+    .select('id, slug, title, sort_order')
+    .eq('is_published', true)
+    .order('sort_order', { ascending: true });
+  if (!courses || courses.length === 0) return null;
+
+  const { data: completedRows } = await supabase
+    .from('lesson_progress')
+    .select('lesson_id')
+    .eq('completed', true);
+  const completedSet = new Set(
+    (completedRows ?? []).map((r) => (r as { lesson_id: string }).lesson_id),
+  );
+
+  for (const c of courses) {
+    const { data: lessons } = await supabase
+      .from('lessons')
+      .select('id, title, sort_order')
+      .eq('course_id', c.id as string)
+      .eq('is_published', true)
+      .order('sort_order', { ascending: true });
+    for (const l of lessons ?? []) {
+      if (!completedSet.has(l.id as string)) {
+        return {
+          courseSlug: c.slug as string,
+          courseTitle: c.title as string,
+          lessonId: l.id as string,
+          lessonTitle: l.title as string,
+          resumeFromSeconds: 0,
+          isResume: false,
+        };
+      }
+    }
+  }
+  return null;
+}

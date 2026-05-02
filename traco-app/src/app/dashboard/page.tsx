@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 
 import { ActiveGoalsCard } from '@/components/dashboard/active-goals-card';
 import { ActiveReactionsCard } from '@/components/dashboard/active-reactions-card';
+import { ContinueAcademyCard } from '@/components/dashboard/continue-academy-card';
 import { PinnedNotesCard } from '@/components/dashboard/pinned-notes-card';
 import { RecurringExpensesCard } from '@/components/dashboard/recurring-expenses-card';
 import { TodayAppointmentsCard } from '@/components/dashboard/today-appointments-card';
@@ -18,6 +19,7 @@ import {
   getPinnedNotesRecent,
   getTodayAppointments,
 } from '@/lib/queries/dashboard';
+import { getNextLessonForUser } from '@/lib/queries/academy';
 import { listRecurringExpensesCreatedToday } from '@/lib/queries/expenses';
 import { listActiveGoals, listUnseenAchievements } from '@/lib/queries/goals';
 import { getCurrentProfile } from '@/lib/queries/profile';
@@ -96,10 +98,12 @@ export default async function DashboardPage() {
     activeGoals,
     unseenAchievements,
     recurringExpensesToday,
+    nextLesson,
     profileRowResult,
     appointmentsHeadResult,
     fichaHeadResult,
     customProcedureResult,
+    academyProgressResult,
   ] = await Promise.all([
     getDashboardStats(profile.tenantId),
     getActiveReactionsSummary(3),
@@ -108,6 +112,7 @@ export default async function DashboardPage() {
     listActiveGoals(),
     listUnseenAchievements(),
     listRecurringExpensesCreatedToday(),
+    getNextLessonForUser(),
     supabase.from('profiles').select('phone').eq('id', profile.id).maybeSingle(),
     supabase.from('appointments').select('id').limit(1),
     supabase.from('anamnesis_forms').select('id').limit(1),
@@ -116,6 +121,7 @@ export default async function DashboardPage() {
       .select('id, created_at, updated_at')
       .order('updated_at', { ascending: false })
       .limit(1),
+    supabase.from('lesson_progress').select('id').limit(1),
   ]);
   const firstName = getFirstName(profile.fullName ?? profile.email);
   const revenue = formatRevenue(stats.monthlyRevenue);
@@ -133,6 +139,7 @@ export default async function DashboardPage() {
       ),
     hasAppointment: (appointmentsHead ?? []).length > 0,
     hasFicha: (fichaHead ?? []).length > 0,
+    hasFirstAcademyLesson: (academyProgressResult.data ?? []).length > 0,
   };
 
   return (
@@ -150,6 +157,8 @@ export default async function DashboardPage() {
       <UnseenAchievementsCard achievements={unseenAchievements} />
 
       <RecurringExpensesCard expenses={recurringExpensesToday} />
+
+      <ContinueAcademyCard next={nextLesson} />
 
       <OnboardingChecklist status={onboarding} />
 

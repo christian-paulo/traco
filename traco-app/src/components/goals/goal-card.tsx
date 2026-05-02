@@ -4,10 +4,12 @@ import {
   CheckCircle2,
   MoreHorizontal,
   Pencil,
+  Share2,
   Sparkles,
   Trash2,
   XCircle,
 } from 'lucide-react';
+import Link from 'next/link';
 import { useMemo, useState, useTransition } from 'react';
 import { toast } from 'sonner';
 
@@ -263,6 +265,16 @@ export function GoalCard({ goal }: Props) {
               <Sparkles className="size-4" />
               Ver estratégia com IA
             </Button>
+            {isAchieved ? (
+              <Link
+                href={`/dashboard/compartilhar?type=goal_milestone&goal=${goal.id}`}
+              >
+                <Button variant="premium" size="sm">
+                  <Share2 className="size-4" />
+                  Compartilhar
+                </Button>
+              </Link>
+            ) : null}
           </div>
         </CardContent>
       </Card>

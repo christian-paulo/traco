@@ -16,6 +16,7 @@ export type OnboardingStatus = {
   hasCustomProcedure: boolean;
   hasAppointment: boolean;
   hasFicha: boolean;
+  hasFirstAcademyLesson: boolean;
 };
 
 type Step = {
@@ -39,9 +40,14 @@ const STEPS: Step[] = [
   {
     key: 'hasAppointment',
     label: 'Registrar primeiro atendimento',
-    href: '/dashboard/atendimentos',
+    href: '/dashboard/agenda?tab=historico',
   },
   { key: 'hasFicha', label: 'Enviar primeira ficha', href: '/dashboard/clientes' },
+  {
+    key: 'hasFirstAcademyLesson',
+    label: 'Veja a primeira aula da Academia',
+    href: '/dashboard/academia/bem-vinda-traco',
+  },
 ];
 
 type Props = {

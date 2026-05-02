@@ -46,6 +46,8 @@ type PrefsLite = {
 type Props = {
   initialData: ReportData;
   preferences: PrefsLite;
+  initialReportType?: ReportType;
+  initialAchievementLabel?: string;
 };
 
 type ReportTypeCard = {
@@ -198,11 +200,28 @@ function isFieldBlocked(key: FieldKey, prefs: PrefsLite): boolean {
   return false;
 }
 
-export function SharingFlow({ initialData, preferences }: Props) {
-  const [step, setStep] = useState<'pick' | 'config'>('pick');
-  const [reportType, setReportType] = useState<ReportType>('daily');
-  const [period, setPeriod] = useState(periodForType('today'));
-  const [fields, setFields] = useState<FieldKey[]>([]);
+export function SharingFlow({
+  initialData,
+  preferences,
+  initialReportType,
+  initialAchievementLabel,
+}: Props) {
+  // Se chegou com tipo pré-selecionado (ex: vindo de "Compartilhar conquista"),
+  // pula direto pro step de configuração com defaults daquele tipo.
+  const presetCard = initialReportType
+    ? TYPE_CARDS.find((c) => c.key === initialReportType)
+    : null;
+  const [step, setStep] = useState<'pick' | 'config'>(presetCard ? 'config' : 'pick');
+  const [reportType, setReportType] = useState<ReportType>(
+    presetCard?.key ?? 'daily',
+  );
+  const [period, setPeriod] = useState(
+    periodForType(presetCard?.defaultPeriod ?? 'today'),
+  );
+  const [fields, setFields] = useState<FieldKey[]>(() => {
+    if (!presetCard) return [];
+    return presetCard.defaultFields.filter((f) => !isFieldBlocked(f, preferences));
+  });
   const [watermark, setWatermark] = useState(preferences.watermark_enabled);
   const [pending, startTransition] = useTransition();
   const [resultOpen, setResultOpen] = useState(false);
@@ -245,6 +264,7 @@ export function SharingFlow({ initialData, preferences }: Props) {
         fields,
         watermark,
         brand_color: brandColor,
+        achievement_label: initialAchievementLabel,
       });
       if (r.success) {
         setResultId(r.data.id);

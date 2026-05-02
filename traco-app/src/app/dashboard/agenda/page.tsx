@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 
-import { AgendaPageContent } from '@/components/agenda/agenda-page-content';
+import { AgendaTabs } from '@/components/agenda/agenda-tabs';
 import type { AgendaAppointment } from '@/components/agenda/agenda-day-view';
 import { Card, CardContent } from '@/components/ui/card';
+import { listAppointments } from '@/lib/queries/appointments';
 import { listClients } from '@/lib/queries/clients';
 import { getClientsWithActiveReactionIds } from '@/lib/queries/dashboard';
 import { listProcedures } from '@/lib/queries/procedures';
@@ -13,7 +14,15 @@ export const metadata: Metadata = {
   title: 'Agenda',
 };
 
-type SearchParams = Promise<{ date?: string }>;
+type SearchParams = Promise<{
+  tab?: string;
+  date?: string;
+  procedure?: string;
+  from?: string;
+  to?: string;
+}>;
+
+type Tab = 'calendario' | 'historico';
 
 function pad(n: number) {
   return String(n).padStart(2, '0');
@@ -21,20 +30,35 @@ function pad(n: number) {
 function fmt(d: Date) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
+function defaultDateRange() {
+  const today = new Date();
+  const start = new Date(today);
+  start.setDate(today.getDate() - 30);
+  return { from: fmt(start), to: fmt(today) };
+}
+function parseTab(v: string | undefined): Tab {
+  return v === 'historico' ? 'historico' : 'calendario';
+}
 
-export default async function AgendaPage({ searchParams }: { searchParams: SearchParams }) {
+export default async function AgendaPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
   const params = await searchParams;
+  const tab = parseTab(params.tab);
   const today = fmt(new Date());
   const date = params.date ?? today;
 
   const professional = await getCurrentProfessional();
-
   if (!professional) {
     return (
       <div className="flex flex-col gap-10">
         <header className="flex flex-col gap-2">
           <div className="h-px w-8 bg-[var(--gold)]" />
-          <h1 className="font-serif text-4xl font-medium tracking-tight text-foreground">Agenda</h1>
+          <h1 className="font-serif text-4xl font-medium tracking-tight text-foreground">
+            Agenda
+          </h1>
         </header>
         <Card variant="premium" className="bg-card border-0 ring-1 ring-[var(--border)] py-12">
           <CardContent className="text-center">
@@ -51,12 +75,22 @@ export default async function AgendaPage({ searchParams }: { searchParams: Searc
   const dayStart = `${date}T00:00:00.000Z`;
   const dayEnd = `${date}T23:59:59.999Z`;
 
+  // Histórico — usa range diferente do dia do calendário
+  const fallback = defaultDateRange();
+  const histFrom = params.from ?? fallback.from;
+  const histTo = params.to ?? fallback.to;
+  const procedureId = params.procedure ?? '';
+  const histFromIso = `${histFrom}T00:00:00.000Z`;
+  const histToIso = `${histTo}T23:59:59.999Z`;
+  const histHasFilters = Boolean(params.procedure || params.from || params.to);
+
   const [
     { data: appts },
     hours,
     clientsWithReactions,
     { rows: clientsRows },
     procedures,
+    histResult,
   ] = await Promise.all([
     supabase
       .from('appointments')
@@ -71,6 +105,11 @@ export default async function AgendaPage({ searchParams }: { searchParams: Searc
     getClientsWithActiveReactionIds(),
     listClients({}),
     listProcedures(false),
+    listAppointments({
+      procedureId: procedureId || undefined,
+      dateFrom: histFromIso,
+      dateTo: histToIso,
+    }),
   ]);
 
   type Raw = {
@@ -120,7 +159,18 @@ export default async function AgendaPage({ searchParams }: { searchParams: Searc
 
   return (
     <div className="flex flex-col gap-8">
-      <AgendaPageContent
+      <header className="flex flex-col gap-2">
+        <div className="h-px w-8 bg-[var(--gold)]" />
+        <h1 className="font-serif text-4xl font-medium tracking-tight text-foreground">
+          Agenda
+        </h1>
+        <p className="text-xs font-medium uppercase tracking-[0.3em] text-muted-foreground">
+          Calendário do dia e histórico de atendimentos
+        </p>
+      </header>
+
+      <AgendaTabs
+        initialTab={tab}
         date={date}
         appointments={appointments}
         workingHours={
@@ -134,6 +184,13 @@ export default async function AgendaPage({ searchParams }: { searchParams: Searc
         }
         clients={clients}
         procedures={procedures}
+        historicoRows={histResult.rows}
+        historicoTotal={histResult.total}
+        historicoRevenue={histResult.revenue}
+        historicoFrom={histFrom}
+        historicoTo={histTo}
+        historicoProcedureId={procedureId}
+        historicoHasFilters={histHasFilters}
       />
     </div>
   );

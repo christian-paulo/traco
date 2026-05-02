@@ -86,22 +86,16 @@ export function AgendaPageContent({
   }
 
   return (
-    <>
-      <header className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-        <div className="flex flex-col gap-2">
-          <div className="h-px w-8 bg-[var(--gold)]" />
-          <h1 className="font-serif text-4xl font-medium tracking-tight text-foreground">
-            Agenda
-          </h1>
-          <p className="text-xs font-medium uppercase tracking-[0.3em] text-muted-foreground">
-            Sua semana, seu dia
-          </p>
-        </div>
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+          Sua semana, seu dia
+        </p>
         <Button variant="premium" size="xl" onClick={handleNewClick}>
           <Plus className="size-4" />
           Novo agendamento
         </Button>
-      </header>
+      </div>
 
       <AgendaToolbar currentDate={date} />
 
@@ -119,6 +113,6 @@ export function AgendaPageContent({
         procedures={procedures}
         defaultStartLocal={defaultStart}
       />
-    </>
+    </div>
   );
 }

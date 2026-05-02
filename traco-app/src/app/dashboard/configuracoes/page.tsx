@@ -1,6 +1,7 @@
 import { headers } from 'next/headers';
 import type { Metadata } from 'next';
 
+import { AcademyAdminPanel } from '@/components/academy/admin/academy-admin-panel';
 import { BookingPolicyForm } from '@/components/configuracoes/booking-policy-form';
 import { PrivacyForm } from '@/components/configuracoes/privacy-form';
 import { ProceduresList } from '@/components/configuracoes/procedures-list';
@@ -10,6 +11,7 @@ import { TenantSettingsForm } from '@/components/configuracoes/tenant-settings-f
 import { WorkingHoursSettings } from '@/components/configuracoes/working-hours-settings';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { isAdmin } from '@/lib/queries/academy';
 import { listProcedures } from '@/lib/queries/procedures';
 import { getCurrentProfile } from '@/lib/queries/profile';
 import { getSharingPreferences } from '@/lib/queries/sharing';
@@ -28,7 +30,28 @@ export const metadata: Metadata = {
 const DEFAULT_WHATSAPP_TEMPLATE =
   'Olá! Vi que faz {dias} dias do meu último {procedimento}. Gostaria de agendar meu retorno.';
 
-export default async function ConfiguracoesPage() {
+type SearchParams = Promise<{ tab?: string }>;
+
+type Tab = 'studio' | 'procedimentos' | 'agendamento' | 'aparencia' | 'admin';
+
+function parseTab(v: string | undefined, allowAdmin: boolean): Tab {
+  if (v === 'admin' && allowAdmin) return 'admin';
+  if (v === 'studio' || v === 'procedimentos' || v === 'agendamento' || v === 'aparencia') {
+    return v;
+  }
+  // legacy values from old tabs — mapeamentos
+  if (v === 'conta') return 'studio';
+  if (v === 'horarios') return 'agendamento';
+  if (v === 'privacidade' || v === 'personalizacao') return 'aparencia';
+  return 'studio';
+}
+
+export default async function ConfiguracoesPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
+  const params = await searchParams;
   const profile = await getCurrentProfile();
   const supabase = await createClient();
   const headerList = await headers();
@@ -40,6 +63,7 @@ export default async function ConfiguracoesPage() {
     studio,
     professional,
     sharingPrefs,
+    admin,
   ] = await Promise.all([
     listProcedures(true),
     profile
@@ -59,7 +83,30 @@ export default async function ConfiguracoesPage() {
     getCurrentStudio(),
     getCurrentProfessional(),
     getSharingPreferences(),
+    isAdmin(),
   ]);
+
+  const [workingHours, timeOff] = professional
+    ? await Promise.all([listWorkingHours(professional.id), listTimeOff(professional.id)])
+    : [[], []];
+
+  // Admin extras (só busca se for admin)
+  const adminData = admin
+    ? await Promise.all([
+        supabase.from('courses').select('*').order('sort_order', { ascending: true }),
+        supabase
+          .from('lessons')
+          .select('*')
+          .order('course_id', { ascending: true })
+          .order('sort_order', { ascending: true }),
+        supabase
+          .from('course_announcements')
+          .select('*')
+          .order('created_at', { ascending: false }),
+      ])
+    : null;
+
+  const tab = parseTab(params.tab, admin);
 
   const sharingInitial = sharingPrefs
     ? {
@@ -78,10 +125,6 @@ export default async function ConfiguracoesPage() {
         watermark_enabled: true,
         custom_brand_color: null,
       };
-
-  const [workingHours, timeOff] = professional
-    ? await Promise.all([listWorkingHours(professional.id), listTimeOff(professional.id)])
-    : [[], []];
 
   const profileInitial = {
     full_name: profileRow?.data?.full_name ?? '',
@@ -141,51 +184,60 @@ export default async function ConfiguracoesPage() {
         </Card>
       ) : null}
 
-      <Tabs defaultValue="conta">
+      <Tabs defaultValue={tab}>
         <TabsList>
-          <TabsTrigger value="conta">Conta</TabsTrigger>
           <TabsTrigger value="studio">Studio</TabsTrigger>
           <TabsTrigger value="procedimentos">Procedimentos</TabsTrigger>
-          <TabsTrigger value="horarios">Horários</TabsTrigger>
           <TabsTrigger value="agendamento">Agendamento</TabsTrigger>
-          <TabsTrigger value="privacidade">Privacidade</TabsTrigger>
-          <TabsTrigger value="personalizacao">Personalização</TabsTrigger>
+          <TabsTrigger value="aparencia">Aparência & privacidade</TabsTrigger>
+          {admin ? <TabsTrigger value="admin">Admin</TabsTrigger> : null}
         </TabsList>
 
-        <TabsContent value="conta" className="mt-6 flex flex-col gap-5">
-          <div className="flex flex-col gap-1">
-            <h2 className="font-serif text-2xl font-medium tracking-tight text-foreground">
-              Sua conta
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Nome, WhatsApp e foto. Estes dados aparecem nos emails e PDFs enviados às clientes.
-            </p>
-          </div>
-          <Card variant="premium" className="bg-card border-0 ring-1 ring-[var(--border)] py-6">
-            <CardContent className="px-6">
-              <ProfileForm initial={profileInitial} />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="studio" className="mt-6 flex flex-col gap-5">
+        {/* Studio = Conta + Studio */}
+        <TabsContent value="studio" className="mt-6 flex flex-col gap-6">
           <div className="flex flex-col gap-1">
             <h2 className="font-serif text-2xl font-medium tracking-tight text-foreground">
               Studio
             </h2>
             <p className="text-sm text-muted-foreground">
-              Identidade pública do studio — nome, bio, endereço e link de agendamento.
+              Você + identidade pública do studio.
             </p>
           </div>
+
           <Card variant="premium" className="bg-card border-0 ring-1 ring-[var(--border)] py-6">
-            <CardContent className="px-6">
-              {studioInitial ? (
-                <StudioSettingsForm initial={studioInitial} publicBaseUrl={publicBaseUrl} />
-              ) : (
-                <p className="font-serif italic text-muted-foreground">
-                  Studio não disponível. Aplique a migração 03.
-                </p>
-              )}
+            <CardContent className="flex flex-col gap-2 px-6">
+              <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                Sua conta
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Nome, WhatsApp e foto. Aparece nos emails e PDFs enviados às clientes.
+              </p>
+              <div className="mt-3">
+                <ProfileForm initial={profileInitial} />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card variant="premium" className="bg-card border-0 ring-1 ring-[var(--border)] py-6">
+            <CardContent className="flex flex-col gap-2 px-6">
+              <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                Studio público
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Nome, bio, endereço e link de agendamento.
+              </p>
+              <div className="mt-3">
+                {studioInitial ? (
+                  <StudioSettingsForm
+                    initial={studioInitial}
+                    publicBaseUrl={publicBaseUrl}
+                  />
+                ) : (
+                  <p className="font-serif italic text-muted-foreground">
+                    Studio não disponível. Aplique a migração 03.
+                  </p>
+                )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -212,82 +264,125 @@ export default async function ConfiguracoesPage() {
           )}
         </TabsContent>
 
-        <TabsContent value="horarios" className="mt-6 flex flex-col gap-5">
+        {/* Agendamento = Horários + Política */}
+        <TabsContent value="agendamento" className="mt-6 flex flex-col gap-6">
           <div className="flex flex-col gap-1">
             <h2 className="font-serif text-2xl font-medium tracking-tight text-foreground">
-              Horários e folgas
+              Agendamento
             </h2>
             <p className="text-sm text-muted-foreground">
-              Quando você atende e quando está fora. A grade alimenta a disponibilidade pública.
+              Horários, folgas e política do link público.
             </p>
           </div>
+
           <Card variant="premium" className="bg-card border-0 ring-1 ring-[var(--border)] py-6">
-            <CardContent className="px-6">
-              {professional ? (
-                <WorkingHoursSettings initialHours={workingHours} initialTimeOff={timeOff} />
-              ) : (
-                <p className="font-serif italic text-muted-foreground">
-                  Profissional não configurado. Aplique a migração 03.
-                </p>
-              )}
+            <CardContent className="flex flex-col gap-2 px-6">
+              <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                Horários e folgas
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Quando você atende e quando está fora. Alimenta a disponibilidade pública.
+              </p>
+              <div className="mt-3">
+                {professional ? (
+                  <WorkingHoursSettings
+                    initialHours={workingHours}
+                    initialTimeOff={timeOff}
+                  />
+                ) : (
+                  <p className="font-serif italic text-muted-foreground">
+                    Profissional não configurado. Aplique a migração 03.
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card variant="premium" className="bg-card border-0 ring-1 ring-[var(--border)] py-6">
+            <CardContent className="flex flex-col gap-2 px-6">
+              <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                Política de agendamento
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Regras que valem pro link público e pra agenda interna.
+              </p>
+              <div className="mt-3">
+                {bookingPolicyInitial ? (
+                  <BookingPolicyForm initial={bookingPolicyInitial} />
+                ) : (
+                  <p className="font-serif italic text-muted-foreground">
+                    Studio não disponível. Aplique a migração 03.
+                  </p>
+                )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="agendamento" className="mt-6 flex flex-col gap-5">
+        {/* Aparência & privacidade = Personalização + Privacidade */}
+        <TabsContent value="aparencia" className="mt-6 flex flex-col gap-6">
           <div className="flex flex-col gap-1">
             <h2 className="font-serif text-2xl font-medium tracking-tight text-foreground">
-              Política de agendamento
+              Aparência & privacidade
             </h2>
             <p className="text-sm text-muted-foreground">
-              Regras que valem pro link público e pra agenda interna.
+              Marca da comunicação e o que aparece nos posts compartilháveis.
             </p>
           </div>
+
           <Card variant="premium" className="bg-card border-0 ring-1 ring-[var(--border)] py-6">
-            <CardContent className="px-6">
-              {bookingPolicyInitial ? (
-                <BookingPolicyForm initial={bookingPolicyInitial} />
-              ) : (
-                <p className="font-serif italic text-muted-foreground">
-                  Studio não disponível. Aplique a migração 03.
-                </p>
-              )}
+            <CardContent className="flex flex-col gap-2 px-6">
+              <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                Marca e templates
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Identidade do studio e templates de comunicação.
+              </p>
+              <div className="mt-3">
+                <TenantSettingsForm initial={tenantInitial} />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card variant="premium" className="bg-card border-0 ring-1 ring-[var(--border)] py-6">
+            <CardContent className="flex flex-col gap-2 px-6">
+              <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                Privacidade dos posts
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Padrão é proteger financeiro — você decide quando expor.
+              </p>
+              <div className="mt-3">
+                <PrivacyForm initial={sharingInitial} />
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="privacidade" className="mt-6 flex flex-col gap-5">
-          <div className="flex flex-col gap-1">
-            <h2 className="font-serif text-2xl font-medium tracking-tight text-foreground">
-              Privacidade dos posts
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Controle o que aparece nos resumos compartilháveis. Padrão é proteger
-              dados financeiros — você decide quando expor.
-            </p>
-          </div>
-          <Card variant="premium" className="bg-card border-0 ring-1 ring-[var(--border)] py-6">
-            <CardContent className="px-6">
-              <PrivacyForm initial={sharingInitial} />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="personalizacao" className="mt-6 flex flex-col gap-5">
-          <div className="flex flex-col gap-1">
-            <h2 className="font-serif text-2xl font-medium tracking-tight text-foreground">
-              Personalização
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Identidade do studio e templates de comunicação.
-            </p>
-          </div>
-          <Card variant="premium" className="bg-card border-0 ring-1 ring-[var(--border)] py-6">
-            <CardContent className="px-6">
-              <TenantSettingsForm initial={tenantInitial} />
-            </CardContent>
-          </Card>
-        </TabsContent>
+        {admin && adminData ? (
+          <TabsContent value="admin" className="mt-6 flex flex-col gap-5">
+            <div className="flex flex-col gap-1">
+              <h2 className="font-serif text-2xl font-medium tracking-tight text-foreground">
+                Admin · Academia Traço
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Cursos, aulas e anúncios — só você vê.
+              </p>
+            </div>
+            <AcademyAdminPanel
+              courses={(adminData[0].data ?? []) as never}
+              lessons={
+                ((adminData[1].data ?? []) as Array<{
+                  resources_urls?: unknown;
+                }>).map((l) => ({
+                  ...l,
+                  resources_urls: Array.isArray(l.resources_urls) ? l.resources_urls : [],
+                })) as never
+              }
+              announcements={(adminData[2].data ?? []) as never}
+            />
+          </TabsContent>
+        ) : null}
       </Tabs>
     </div>
   );
