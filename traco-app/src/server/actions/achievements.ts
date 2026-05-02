@@ -4,9 +4,14 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import type { AchievementType } from '@/lib/validations/goal';
 
 /**
- * Garante que uma achievement existe (insert idempotente via UNIQUE constraint).
+ * Garante que uma achievement existe (insert idempotente).
  * Retorna o tipo da achievement se foi criada AGORA (pra disparar toast).
  * Retorna null se já existia.
+ *
+ * IMPORTANTE: pre-check explícito porque Postgres trata NULL != NULL em UNIQUE,
+ * e achievements absolutas (first_client, etc) usam goal_id = NULL. O constraint
+ * UNIQUE(tenant_id, type, goal_id) sozinho não bloqueava duplicatas no caso NULL.
+ * Migration 11 adicionou partial unique index pro NULL case como cinto + suspensório.
  */
 export async function ensureAchievement(args: {
   tenantId: string;
@@ -15,24 +20,34 @@ export async function ensureAchievement(args: {
   contextData?: Record<string, unknown>;
 }): Promise<AchievementType | null> {
   const supabase = createAdminClient();
-  const { data, error } = await supabase
+  const goalId = args.goalId ?? null;
+
+  // Pre-check: existe?
+  const existsQuery = supabase
     .from('achievements')
-    .upsert(
-      {
-        tenant_id: args.tenantId,
-        type: args.type,
-        goal_id: args.goalId ?? null,
-        context_data: (args.contextData ?? null) as never,
-      },
-      { onConflict: 'tenant_id,type,goal_id', ignoreDuplicates: true },
-    )
-    .select('id')
-    .maybeSingle();
+    .select('id', { count: 'exact', head: true })
+    .eq('tenant_id', args.tenantId)
+    .eq('type', args.type);
+  const filtered =
+    goalId === null ? existsQuery.is('goal_id', null) : existsQuery.eq('goal_id', goalId);
+  const { count } = await filtered;
+  if ((count ?? 0) > 0) return null;
+
+  // Insert. Se houver race, o partial index ou o UNIQUE constraint vão barrar
+  // com erro 23505 (unique_violation) — tratamos como "já existia".
+  const { error } = await supabase.from('achievements').insert({
+    tenant_id: args.tenantId,
+    type: args.type,
+    goal_id: goalId,
+    context_data: (args.contextData ?? null) as never,
+  });
+
   if (error) {
+    if (error.code === '23505') return null; // race condition: outra request já criou
     console.error('[achievements] erro:', error.message);
     return null;
   }
-  return data ? args.type : null;
+  return args.type;
 }
 
 const GOAL_MILESTONE_MAP: Array<{ pct: number; type: AchievementType }> = [
