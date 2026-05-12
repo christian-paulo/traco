@@ -12,12 +12,15 @@ export type AgendaAppointment = {
   id: string;
   client_id: string;
   client_name: string;
+  client_phone: string;
+  procedure_id: string;
   procedure_name: string;
   procedure_color: string;
   scheduled_start_at: string;
   scheduled_end_at: string;
   status: string;
   price: number;
+  notes: string | null;
   has_active_reaction: boolean;
 };
 
@@ -26,6 +29,7 @@ type Props = {
   appointments: AgendaAppointment[];
   workingHours: { start_time: string; end_time: string; is_active: boolean } | null;
   onEmptySlotClick?: (localIso: string) => void;
+  onAppointmentClick?: (apt: AgendaAppointment) => void;
 };
 
 const PX_PER_MIN = 1.2;
@@ -47,7 +51,13 @@ function pad(n: number) {
   return String(n).padStart(2, '0');
 }
 
-export function AgendaDayView({ date, appointments, workingHours, onEmptySlotClick }: Props) {
+export function AgendaDayView({
+  date,
+  appointments,
+  workingHours,
+  onEmptySlotClick,
+  onAppointmentClick,
+}: Props) {
   const dayStartMin = DAY_START_HOUR * 60;
   const dayEndMin = DAY_END_HOUR * 60;
   const totalMin = dayEndMin - dayStartMin;
@@ -174,9 +184,14 @@ export function AgendaDayView({ date, appointments, workingHours, onEmptySlotCli
                     borderLeft: `3px solid ${apt.procedure_color}`,
                   }}
                 >
-                  <Link
-                    href={`/dashboard/clientes/${apt.client_id}`}
-                    className="flex h-full flex-col gap-0.5 overflow-hidden px-2 py-1.5 text-xs"
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAppointmentClick?.(apt);
+                    }}
+                    className="flex h-full w-full flex-col gap-0.5 overflow-hidden px-2 py-1.5 text-left text-xs"
+                    aria-label={`Ver detalhes: ${apt.client_name}, ${apt.procedure_name}`}
                   >
                     <span className="flex items-center gap-1 truncate font-medium text-foreground">
                       {apt.has_active_reaction ? (
@@ -196,10 +211,11 @@ export function AgendaDayView({ date, appointments, workingHours, onEmptySlotCli
                     <span className="text-[10px] text-foreground/80">
                       {formatCurrency(apt.price)}
                     </span>
-                  </Link>
+                  </button>
                   {canStart ? (
                     <Link
                       href={`/atendimento/${apt.id}`}
+                      onClick={(e) => e.stopPropagation()}
                       className="absolute bottom-1.5 right-1.5 inline-flex items-center gap-1 rounded-full bg-[var(--gold)] px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.12em] text-ink shadow-sm transition-all hover:scale-105 hover:shadow-md"
                       aria-label="Iniciar atendimento"
                     >

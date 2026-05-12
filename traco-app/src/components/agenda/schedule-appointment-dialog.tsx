@@ -23,7 +23,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import type { ProcedureRow } from '@/lib/queries/procedures';
-import { createScheduledAppointment } from '@/server/actions/appointments';
+import {
+  createScheduledAppointment,
+  updateScheduledAppointment,
+} from '@/server/actions/appointments';
+
+export type EditingAppointment = {
+  id: string;
+  client_id: string;
+  procedure_id: string;
+  scheduled_start_at: string;
+  scheduled_end_at: string;
+  price: number;
+  notes: string | null;
+};
 
 type Props = {
   open: boolean;
@@ -31,10 +44,16 @@ type Props = {
   clients: ClientLite[];
   procedures: ProcedureRow[];
   defaultStartLocal: string; // formato "YYYY-MM-DDTHH:mm"
+  editing?: EditingAppointment | null;
 };
 
 function pad(n: number) {
   return String(n).padStart(2, '0');
+}
+
+function isoToLocal(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function addMinutesToLocal(localIso: string, minutes: number): string {
@@ -78,7 +97,9 @@ export function ScheduleAppointmentDialog({
   clients,
   procedures,
   defaultStartLocal,
+  editing,
 }: Props) {
+  const isEditing = Boolean(editing);
   const [clientId, setClientId] = useState<string | null>(null);
   const [procedure, setProcedure] = useState<ProcedureRow | null>(null);
   const [startLocal, setStartLocal] = useState(defaultStartLocal);
@@ -90,13 +111,23 @@ export function ScheduleAppointmentDialog({
   // Reset on (re)open
   useEffect(() => {
     if (!open) return;
-    setClientId(null);
-    setProcedure(null);
-    setStartLocal(defaultStartLocal);
-    setEndLocal(addMinutesToLocal(defaultStartLocal, 60));
-    setPrice('0');
-    setNotes('');
-  }, [open, defaultStartLocal]);
+    if (editing) {
+      setClientId(editing.client_id);
+      const proc = procedures.find((p) => p.id === editing.procedure_id) ?? null;
+      setProcedure(proc);
+      setStartLocal(isoToLocal(editing.scheduled_start_at));
+      setEndLocal(isoToLocal(editing.scheduled_end_at));
+      setPrice(String(editing.price));
+      setNotes(editing.notes ?? '');
+    } else {
+      setClientId(null);
+      setProcedure(null);
+      setStartLocal(defaultStartLocal);
+      setEndLocal(addMinutesToLocal(defaultStartLocal, 60));
+      setPrice('0');
+      setNotes('');
+    }
+  }, [open, defaultStartLocal, editing, procedures]);
 
   // Quando muda procedimento, ajusta end e price
   function handleProcedureChange(proc: ProcedureRow) {
@@ -128,7 +159,7 @@ export function ScheduleAppointmentDialog({
     e.preventDefault();
     if (!isValid || !clientId || !procedure) return;
     startTransition(async () => {
-      const result = await createScheduledAppointment({
+      const payload = {
         client_id: clientId,
         procedure_id: procedure.id,
         scheduled_start_at: startLocal,
@@ -136,12 +167,15 @@ export function ScheduleAppointmentDialog({
         price: Number(price.replace(',', '.')),
         notes: notes.trim() || null,
         notes_internal: null,
-      });
+      };
+      const result = isEditing && editing
+        ? await updateScheduledAppointment(editing.id, payload)
+        : await createScheduledAppointment(payload);
       if (result.success) {
-        toast.success('Agendamento criado.');
+        toast.success(isEditing ? 'Agendamento atualizado.' : 'Agendamento criado.');
         onOpenChange(false);
       } else {
-        toast.error(result.error || 'Erro ao agendar.');
+        toast.error(result.error || 'Erro ao salvar.');
       }
     });
   }
@@ -150,7 +184,7 @@ export function ScheduleAppointmentDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Novo agendamento</DialogTitle>
+          <DialogTitle>{isEditing ? 'Editar agendamento' : 'Novo agendamento'}</DialogTitle>
           <DialogDescription>
             Cliente, procedimento e horário. A cliente recebe a confirmação só quando você
             decidir avisar.
@@ -248,7 +282,7 @@ export function ScheduleAppointmentDialog({
             </Button>
             <Button variant="premium" type="submit" disabled={!isValid || pending}>
               {pending ? <Loader2 className="size-4 animate-spin" /> : null}
-              Agendar
+              {isEditing ? 'Salvar' : 'Agendar'}
             </Button>
           </DialogFooter>
         </form>

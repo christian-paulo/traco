@@ -3,9 +3,11 @@ import type { Metadata } from 'next';
 import { AgendaTabs } from '@/components/agenda/agenda-tabs';
 import type { AgendaAppointment } from '@/components/agenda/agenda-day-view';
 import { Card, CardContent } from '@/components/ui/card';
+import { getCurrentProfile } from '@/lib/queries/profile';
 import { listAppointments } from '@/lib/queries/appointments';
 import { listClients } from '@/lib/queries/clients';
 import { getClientsWithActiveReactionIds } from '@/lib/queries/dashboard';
+import { listMessageTemplates } from '@/lib/queries/message-templates';
 import { listProcedures } from '@/lib/queries/procedures';
 import { getCurrentProfessional, listWorkingHours } from '@/lib/queries/studio';
 import { createClient } from '@/lib/supabase/server';
@@ -71,6 +73,7 @@ export default async function AgendaPage({
     );
   }
 
+  const profile = await getCurrentProfile();
   const supabase = await createClient();
   const dayStart = `${date}T00:00:00.000Z`;
   const dayEnd = `${date}T23:59:59.999Z`;
@@ -91,11 +94,13 @@ export default async function AgendaPage({
     { rows: clientsRows },
     procedures,
     histResult,
+    studioRow,
+    messageTemplates,
   ] = await Promise.all([
     supabase
       .from('appointments')
       .select(
-        'id, client_id, scheduled_start_at, scheduled_end_at, status, price, clients(full_name), procedures(name, color)',
+        'id, client_id, procedure_id, scheduled_start_at, scheduled_end_at, status, price, notes, clients(full_name, phone), procedures(name, color)',
       )
       .eq('professional_id', professional.id)
       .gte('scheduled_start_at', dayStart)
@@ -110,17 +115,31 @@ export default async function AgendaPage({
       dateFrom: histFromIso,
       dateTo: histToIso,
     }),
+    supabase
+      .from('studios')
+      .select('name, address')
+      .eq('id', professional.studio_id)
+      .maybeSingle(),
+    listMessageTemplates(),
   ]);
 
+  const studioName = studioRow?.data?.name ?? null;
+  const studioAddress = studioRow?.data?.address ?? null;
+  const designerName = profile?.fullName ?? null;
+
+  type RawClient = { full_name: string; phone: string | null };
+  type RawProc = { name: string; color: string };
   type Raw = {
     id: string;
     client_id: string;
+    procedure_id: string;
     scheduled_start_at: string | null;
     scheduled_end_at: string | null;
     status: string;
     price: number | null;
-    clients: { full_name: string } | { full_name: string }[] | null;
-    procedures: { name: string; color: string } | { name: string; color: string }[] | null;
+    notes: string | null;
+    clients: RawClient | RawClient[] | null;
+    procedures: RawProc | RawProc[] | null;
   };
   function pickOne<T>(v: T | T[] | null | undefined): T | null {
     if (!v) return null;
@@ -137,12 +156,15 @@ export default async function AgendaPage({
         id: r.id,
         client_id: r.client_id,
         client_name: client?.full_name ?? 'Cliente',
+        client_phone: client?.phone ?? '',
+        procedure_id: r.procedure_id,
         procedure_name: proc?.name ?? 'Procedimento',
         procedure_color: proc?.color ?? '#C9A961',
         scheduled_start_at: r.scheduled_start_at,
         scheduled_end_at: r.scheduled_end_at,
         status: r.status,
         price: Number(r.price ?? 0),
+        notes: r.notes,
         has_active_reaction: clientsWithReactions.has(r.client_id),
       } satisfies AgendaAppointment;
     })
@@ -184,6 +206,10 @@ export default async function AgendaPage({
         }
         clients={clients}
         procedures={procedures}
+        messageTemplates={messageTemplates}
+        designerName={designerName}
+        studioName={studioName}
+        studioAddress={studioAddress}
         historicoRows={histResult.rows}
         historicoTotal={histResult.total}
         historicoRevenue={histResult.revenue}

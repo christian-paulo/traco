@@ -113,6 +113,46 @@ export async function createScheduledAppointment(
   return { success: true, data: { id: data.id } };
 }
 
+export async function updateScheduledAppointment(
+  id: string,
+  input: ScheduledAppointmentInput,
+): Promise<SimpleResult> {
+  const parsed = scheduledAppointmentSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: flattenZodErrors(parsed.error) };
+  }
+
+  const supabase = await createClient();
+  const startAt = new Date(parsed.data.scheduled_start_at);
+  const endAt = new Date(parsed.data.scheduled_end_at);
+
+  const { data, error } = await supabase
+    .from('appointments')
+    .update({
+      client_id: parsed.data.client_id,
+      procedure_id: parsed.data.procedure_id,
+      performed_at: startAt.toISOString(),
+      scheduled_start_at: startAt.toISOString(),
+      scheduled_end_at: endAt.toISOString(),
+      price: parsed.data.price,
+      notes: parsed.data.notes,
+      notes_internal: parsed.data.notes_internal ?? null,
+    })
+    .eq('id', id)
+    .select('client_id')
+    .single();
+
+  if (error || !data) {
+    return { success: false, error: error?.message ?? 'Erro ao atualizar agendamento.' };
+  }
+
+  revalidatePath('/dashboard/atendimentos');
+  revalidatePath('/dashboard');
+  revalidatePath('/dashboard/agenda');
+  if (data.client_id) revalidatePath(`/dashboard/clientes/${data.client_id}`);
+  return { success: true };
+}
+
 export async function updateAppointment(
   id: string,
   input: AppointmentInput,

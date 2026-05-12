@@ -7,10 +7,15 @@ import {
   AgendaDayView,
   type AgendaAppointment,
 } from '@/components/agenda/agenda-day-view';
-import { ScheduleAppointmentDialog } from '@/components/agenda/schedule-appointment-dialog';
+import { AppointmentDetailsSheet } from '@/components/agenda/appointment-details-sheet';
+import {
+  ScheduleAppointmentDialog,
+  type EditingAppointment,
+} from '@/components/agenda/schedule-appointment-dialog';
 import { AgendaToolbar } from '@/components/agenda/agenda-toolbar';
 import type { ClientLite } from '@/components/appointments/client-combobox';
 import { Button } from '@/components/ui/button';
+import type { MessageTemplateRow } from '@/lib/queries/message-templates';
 import type { ProcedureRow } from '@/lib/queries/procedures';
 
 type Props = {
@@ -19,6 +24,10 @@ type Props = {
   workingHours: { start_time: string; end_time: string; is_active: boolean } | null;
   clients: ClientLite[];
   procedures: ProcedureRow[];
+  messageTemplates: MessageTemplateRow[];
+  designerName: string | null;
+  studioName: string | null;
+  studioAddress: string | null;
 };
 
 function pad(n: number) {
@@ -26,8 +35,6 @@ function pad(n: number) {
 }
 
 function nextRoundedSlotLocal(date: string): string {
-  // Se a data é hoje, arredonda agora pra próxima meia hora.
-  // Se a data é futura, default = 09:00.
   const [y, m, d] = date.split('-').map(Number);
   const today = new Date();
   const isToday =
@@ -50,11 +57,18 @@ export function AgendaPageContent({
   workingHours,
   clients,
   procedures,
+  messageTemplates,
+  designerName,
+  studioName,
+  studioAddress,
 }: Props) {
-  const [open, setOpen] = useState(false);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
   const [defaultStart, setDefaultStart] = useState<string>(() =>
     nextRoundedSlotLocal(date),
   );
+  const [editing, setEditing] = useState<EditingAppointment | null>(null);
+  const [detailsApt, setDetailsApt] = useState<AgendaAppointment | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   // Atalho Cmd/Ctrl + N abre novo agendamento
   useEffect(() => {
@@ -67,8 +81,9 @@ export function AgendaPageContent({
       const mod = e.ctrlKey || e.metaKey;
       if (mod && !e.shiftKey && (e.key === 'n' || e.key === 'N')) {
         e.preventDefault();
+        setEditing(null);
         setDefaultStart(nextRoundedSlotLocal(date));
-        setOpen(true);
+        setScheduleOpen(true);
       }
     }
     window.addEventListener('keydown', onKey);
@@ -76,13 +91,34 @@ export function AgendaPageContent({
   }, [date]);
 
   function handleNewClick() {
+    setEditing(null);
     setDefaultStart(nextRoundedSlotLocal(date));
-    setOpen(true);
+    setScheduleOpen(true);
   }
 
   function handleEmptySlotClick(localIso: string) {
+    setEditing(null);
     setDefaultStart(localIso);
-    setOpen(true);
+    setScheduleOpen(true);
+  }
+
+  function handleAppointmentClick(apt: AgendaAppointment) {
+    setDetailsApt(apt);
+    setDetailsOpen(true);
+  }
+
+  function handleEditFromDetails(apt: AgendaAppointment) {
+    setDetailsOpen(false);
+    setEditing({
+      id: apt.id,
+      client_id: apt.client_id,
+      procedure_id: apt.procedure_id,
+      scheduled_start_at: apt.scheduled_start_at,
+      scheduled_end_at: apt.scheduled_end_at,
+      price: apt.price,
+      notes: apt.notes,
+    });
+    setScheduleOpen(true);
   }
 
   return (
@@ -104,14 +140,27 @@ export function AgendaPageContent({
         appointments={appointments}
         workingHours={workingHours}
         onEmptySlotClick={handleEmptySlotClick}
+        onAppointmentClick={handleAppointmentClick}
       />
 
       <ScheduleAppointmentDialog
-        open={open}
-        onOpenChange={setOpen}
+        open={scheduleOpen}
+        onOpenChange={setScheduleOpen}
         clients={clients}
         procedures={procedures}
         defaultStartLocal={defaultStart}
+        editing={editing}
+      />
+
+      <AppointmentDetailsSheet
+        appointment={detailsApt}
+        open={detailsOpen}
+        onOpenChange={setDetailsOpen}
+        onEdit={handleEditFromDetails}
+        messageTemplates={messageTemplates}
+        designerName={designerName}
+        studioName={studioName}
+        studioAddress={studioAddress}
       />
     </div>
   );

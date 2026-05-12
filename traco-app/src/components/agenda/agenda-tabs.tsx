@@ -7,6 +7,7 @@ import type { AgendaAppointment } from '@/components/agenda/agenda-day-view';
 import type { ClientLite } from '@/components/appointments/client-combobox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { AppointmentRow } from '@/lib/queries/appointments';
+import type { MessageTemplateRow } from '@/lib/queries/message-templates';
 import type { ProcedureRow } from '@/lib/queries/procedures';
 
 import { HistoricoView } from './views/historico-view';
@@ -21,6 +22,10 @@ type Props = {
   workingHours: { start_time: string; end_time: string; is_active: boolean } | null;
   clients: ClientLite[];
   procedures: ProcedureRow[];
+  messageTemplates: MessageTemplateRow[];
+  designerName: string | null;
+  studioName: string | null;
+  studioAddress: string | null;
   // Histórico
   historicoRows: AppointmentRow[];
   historicoTotal: number;
@@ -56,6 +61,10 @@ export function AgendaTabs(props: Props) {
           workingHours={props.workingHours}
           clients={props.clients}
           procedures={props.procedures}
+          messageTemplates={props.messageTemplates}
+          designerName={props.designerName}
+          studioName={props.studioName}
+          studioAddress={props.studioAddress}
         />
       </TabsContent>
 
