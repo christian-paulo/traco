@@ -121,7 +121,7 @@ export function StudioSettingsForm({ initial, publicBaseUrl }: Props) {
         outputWidth={1600}
         outputHeight={900}
         label="Foto de capa"
-        helpText="Aparece no topo da sua página pública de agendamento. Formato 16:9."
+        helpText="Aparece no topo da sua página pública de agendamento. Tamanho ideal: 1600×900px (16:9). Mínimo recomendado: 1280×720px. JPG, PNG, WebP ou HEIC, máx 5MB."
         previewClassName="h-32 w-full max-w-[360px] sm:h-40"
       />
 

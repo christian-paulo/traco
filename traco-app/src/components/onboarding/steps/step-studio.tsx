@@ -92,7 +92,7 @@ export function StepStudio({ initial, designerFullName, publicBaseUrl }: Props) 
         outputWidth={1600}
         outputHeight={900}
         label="Foto de capa"
-        helpText="Aparece no topo da página de agendamento. Use uma foto do seu espaço ou trabalho."
+        helpText="Aparece no topo da página de agendamento. Tamanho ideal: 1600×900px (proporção 16:9 — formato widescreen, horizontal). Use uma foto do seu espaço ou de um trabalho."
         previewClassName="h-32 w-full max-w-full sm:h-40"
       />
 

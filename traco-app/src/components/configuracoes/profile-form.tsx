@@ -54,7 +54,7 @@ export function ProfileForm({ initial }: Props) {
         outputWidth={500}
         outputHeight={500}
         label="Avatar"
-        helpText="Aparece em emails, fichas e na sua agenda. JPG, PNG, WebP ou HEIC."
+        helpText="Aparece em emails, fichas e na sua agenda. Tamanho ideal: 500×500px (quadrada). JPG, PNG, WebP ou HEIC, máx 5MB."
       />
 
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">

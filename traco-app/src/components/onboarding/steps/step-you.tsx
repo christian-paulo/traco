@@ -67,7 +67,7 @@ export function StepYou({ initial }: Props) {
         outputWidth={500}
         outputHeight={500}
         label="Sua foto"
-        helpText="Opcional, mas dá mais personalidade pras mensagens automáticas e fichas."
+        helpText="Opcional. Tamanho ideal: 500×500px (formato quadrado). Aparece nas suas mensagens e fichas."
       />
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
