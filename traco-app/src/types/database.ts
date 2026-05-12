@@ -1161,6 +1161,50 @@ export type Database = {
           },
         ]
       }
+      message_templates: {
+        Row: {
+          body: string
+          category: Database["public"]["Enums"]["message_template_category"]
+          created_at: string
+          id: string
+          is_default: boolean
+          name: string
+          sort_order: number
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          category: Database["public"]["Enums"]["message_template_category"]
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name: string
+          sort_order?: number
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          category?: Database["public"]["Enums"]["message_template_category"]
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name?: string
+          sort_order?: number
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_templates_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       photos: {
         Row: {
           client_id: string
@@ -1864,6 +1908,7 @@ export type Database = {
         | "new_clients"
         | "recovered_clients"
         | "custom"
+      message_template_category: "reminder" | "aftercare" | "recovery" | "admin"
       report_type:
         | "daily"
         | "weekly"
@@ -2041,6 +2086,7 @@ export const Constants = {
         "recovered_clients",
         "custom",
       ],
+      message_template_category: ["reminder", "aftercare", "recovery", "admin"],
       report_type: [
         "daily",
         "weekly",

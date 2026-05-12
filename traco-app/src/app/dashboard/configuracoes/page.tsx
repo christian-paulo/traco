@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 
 import { AcademyAdminPanel } from '@/components/academy/admin/academy-admin-panel';
 import { BookingPolicyForm } from '@/components/configuracoes/booking-policy-form';
+import { MensagensTab } from '@/components/configuracoes/mensagens-tab';
 import { PrivacyForm } from '@/components/configuracoes/privacy-form';
 import { ProceduresList } from '@/components/configuracoes/procedures-list';
 import { ProfileForm } from '@/components/configuracoes/profile-form';
@@ -12,6 +13,7 @@ import { WorkingHoursSettings } from '@/components/configuracoes/working-hours-s
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { isAdmin } from '@/lib/queries/academy';
+import { listMessageTemplates } from '@/lib/queries/message-templates';
 import { listProcedures } from '@/lib/queries/procedures';
 import { getCurrentProfile } from '@/lib/queries/profile';
 import { getSharingPreferences } from '@/lib/queries/sharing';
@@ -32,11 +34,17 @@ const DEFAULT_WHATSAPP_TEMPLATE =
 
 type SearchParams = Promise<{ tab?: string }>;
 
-type Tab = 'studio' | 'procedimentos' | 'agendamento' | 'aparencia' | 'admin';
+type Tab = 'studio' | 'procedimentos' | 'agendamento' | 'mensagens' | 'aparencia' | 'admin';
 
 function parseTab(v: string | undefined, allowAdmin: boolean): Tab {
   if (v === 'admin' && allowAdmin) return 'admin';
-  if (v === 'studio' || v === 'procedimentos' || v === 'agendamento' || v === 'aparencia') {
+  if (
+    v === 'studio' ||
+    v === 'procedimentos' ||
+    v === 'agendamento' ||
+    v === 'mensagens' ||
+    v === 'aparencia'
+  ) {
     return v;
   }
   // legacy values from old tabs — mapeamentos
@@ -64,6 +72,7 @@ export default async function ConfiguracoesPage({
     professional,
     sharingPrefs,
     admin,
+    messageTemplates,
   ] = await Promise.all([
     listProcedures(true),
     profile
@@ -84,6 +93,7 @@ export default async function ConfiguracoesPage({
     getCurrentProfessional(),
     getSharingPreferences(),
     isAdmin(),
+    listMessageTemplates(),
   ]);
 
   const [workingHours, timeOff] = professional
@@ -189,6 +199,7 @@ export default async function ConfiguracoesPage({
           <TabsTrigger value="studio">Studio</TabsTrigger>
           <TabsTrigger value="procedimentos">Procedimentos</TabsTrigger>
           <TabsTrigger value="agendamento">Agendamento</TabsTrigger>
+          <TabsTrigger value="mensagens">Mensagens</TabsTrigger>
           <TabsTrigger value="aparencia">Aparência & privacidade</TabsTrigger>
           {admin ? <TabsTrigger value="admin">Admin</TabsTrigger> : null}
         </TabsList>
@@ -317,6 +328,10 @@ export default async function ConfiguracoesPage({
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="mensagens" className="mt-6">
+          <MensagensTab templates={messageTemplates} />
         </TabsContent>
 
         {/* Aparência & privacidade = Personalização + Privacidade */}

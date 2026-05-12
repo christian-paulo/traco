@@ -13,6 +13,7 @@ import {
   listAllTags,
   listClients,
 } from '@/lib/queries/clients';
+import { getDefaultMessageTemplate } from '@/lib/queries/message-templates';
 import { getCurrentProfile } from '@/lib/queries/profile';
 import { createClient } from '@/lib/supabase/server';
 
@@ -39,8 +40,9 @@ export default async function ClientesPage({
   if (filtro === 'recuperar') {
     const profile = await getCurrentProfile();
     const supabase = await createClient();
-    const [recoverClients, tenantRow] = await Promise.all([
+    const [recoverClients, recoveryTemplate, tenantRow] = await Promise.all([
       getClientsToRecover(),
+      getDefaultMessageTemplate('recovery'),
       profile
         ? supabase
             .from('tenants')
@@ -50,7 +52,9 @@ export default async function ClientesPage({
         : Promise.resolve({ data: null }),
     ]);
     const whatsappTemplate =
-      tenantRow?.data?.whatsapp_template ?? DEFAULT_WHATSAPP_TEMPLATE;
+      recoveryTemplate?.body ??
+      tenantRow?.data?.whatsapp_template ??
+      DEFAULT_WHATSAPP_TEMPLATE;
     const totalToRecover = recoverClients.length;
     const potentialRevenue = recoverClients.reduce(
       (s, c) => s + c.last_procedure_default_price,
