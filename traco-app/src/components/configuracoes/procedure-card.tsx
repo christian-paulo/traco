@@ -1,6 +1,6 @@
 'use client';
 
-import { Loader2, Save } from 'lucide-react';
+import { Loader2, Save, Trash2 } from 'lucide-react';
 import { useEffect, useState, useTransition } from 'react';
 import { toast } from 'sonner';
 
@@ -12,7 +12,11 @@ import { Switch } from '@/components/ui/switch';
 import type { ProcedureRow } from '@/lib/queries/procedures';
 import { cn } from '@/lib/utils';
 import { procedureSchema } from '@/lib/validations/procedure';
-import { toggleProcedureActive, updateProcedure } from '@/server/actions/procedures';
+import {
+  deleteProcedure,
+  toggleProcedureActive,
+  updateProcedure,
+} from '@/server/actions/procedures';
 
 type Props = {
   procedure: ProcedureRow;
@@ -49,6 +53,7 @@ export function ProcedureCard({ procedure }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [savePending, startSave] = useTransition();
   const [togglePending, startToggle] = useTransition();
+  const [deletePending, startDelete] = useTransition();
   const dirty = isDirty(initial, state);
 
   useEffect(() => {
@@ -87,6 +92,18 @@ export function ProcedureCard({ procedure }: Props) {
     });
   }
 
+  function handleDelete() {
+    if (!confirm(`Excluir "${procedure.name}"?`)) return;
+    startDelete(async () => {
+      const result = await deleteProcedure(procedure.id);
+      if (!result.success) {
+        toast.error(result.error || 'Não foi possível excluir.');
+      } else {
+        toast.success('Procedimento excluído.');
+      }
+    });
+  }
+
   return (
     <Card
       variant="premium"
@@ -95,7 +112,7 @@ export function ProcedureCard({ procedure }: Props) {
         !procedure.is_active && 'opacity-70',
       )}
     >
-      <CardContent className="grid grid-cols-1 gap-4 px-6 lg:grid-cols-[auto_1fr_140px_140px_auto_auto] lg:items-end">
+      <CardContent className="grid grid-cols-1 gap-4 px-6 lg:grid-cols-[auto_1fr_140px_140px_auto_auto_auto] lg:items-end">
         <div className="flex flex-col gap-1.5">
           <Label className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
             Cor
@@ -209,8 +226,26 @@ export function ProcedureCard({ procedure }: Props) {
           </Button>
         </div>
 
+        <div className="flex items-end">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={handleDelete}
+            disabled={deletePending}
+            aria-label="Excluir procedimento"
+            className="h-10 w-10 text-muted-foreground hover:bg-red-50 hover:text-red-600"
+          >
+            {deletePending ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Trash2 className="size-4" />
+            )}
+          </Button>
+        </div>
+
         {error ? (
-          <p className="text-destructive text-xs lg:col-span-6">{error}</p>
+          <p className="text-destructive text-xs lg:col-span-7">{error}</p>
         ) : null}
       </CardContent>
     </Card>
