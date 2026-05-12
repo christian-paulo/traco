@@ -4,11 +4,13 @@ import { Loader2, Save } from 'lucide-react';
 import { useState, useTransition } from 'react';
 import { toast } from 'sonner';
 
+import { ImageUploadWithCrop } from '@/components/shared/image-upload-with-crop';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { updateStudio } from '@/server/actions/studio';
+import { removeStudioCover, uploadStudioCover } from '@/server/actions/upload';
 
 import { ShareLinkCard } from './share-link-card';
 
@@ -28,7 +30,7 @@ export function StudioSettingsForm({ initial, publicBaseUrl }: Props) {
   const [slug, setSlug] = useState(initial.slug);
   const [address, setAddress] = useState(initial.address);
   const [bio, setBio] = useState(initial.bio);
-  const [coverUrl, setCoverUrl] = useState(initial.cover_image_url);
+  const [coverUrl, setCoverUrl] = useState<string | null>(initial.cover_image_url || null);
   const [isPending, startTransition] = useTransition();
 
   const publicUrl = `${publicBaseUrl}/agendar/${slug || '...'}`;
@@ -109,21 +111,19 @@ export function StudioSettingsForm({ initial, publicBaseUrl }: Props) {
         <p className="text-xs text-muted-foreground">{bio.length}/280</p>
       </div>
 
-      <div className="flex flex-col gap-1.5">
-        <Label className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-          Foto de capa (URL)
-        </Label>
-        <Input
-          type="url"
-          value={coverUrl}
-          onChange={(e) => setCoverUrl(e.target.value)}
-          placeholder="https://..."
-          disabled={isPending}
-        />
-        <p className="text-xs text-muted-foreground">
-          Cole a URL pública de uma imagem (em breve, upload direto).
-        </p>
-      </div>
+      <ImageUploadWithCrop
+        value={coverUrl}
+        onChange={setCoverUrl}
+        uploadAction={uploadStudioCover}
+        removeAction={removeStudioCover}
+        aspect={16 / 9}
+        cropShape="rect"
+        outputWidth={1600}
+        outputHeight={900}
+        label="Foto de capa"
+        helpText="Aparece no topo da sua página pública de agendamento. Formato 16:9."
+        previewClassName="h-32 w-full max-w-[360px] sm:h-40"
+      />
 
       <div>
         <Button type="submit" variant="default" disabled={isPending} className="h-10">

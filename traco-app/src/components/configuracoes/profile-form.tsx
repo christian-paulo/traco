@@ -4,10 +4,15 @@ import { Loader2, Save } from 'lucide-react';
 import { useState, useTransition } from 'react';
 import { toast } from 'sonner';
 
+import { ImageUploadWithCrop } from '@/components/shared/image-upload-with-crop';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatPhoneBR } from '@/lib/utils/phone';
+import {
+  removeProfileAvatar,
+  uploadProfileAvatar,
+} from '@/server/actions/upload';
 import { updateProfile } from '@/server/actions/settings';
 
 type Props = {
@@ -21,7 +26,7 @@ type Props = {
 export function ProfileForm({ initial }: Props) {
   const [fullName, setFullName] = useState(initial.full_name);
   const [phone, setPhone] = useState(initial.phone);
-  const [avatarUrl, setAvatarUrl] = useState(initial.avatar_url);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(initial.avatar_url || null);
   const [isPending, startTransition] = useTransition();
 
   function handleSubmit(e: React.FormEvent) {
@@ -30,7 +35,7 @@ export function ProfileForm({ initial }: Props) {
       const result = await updateProfile({
         full_name: fullName,
         phone,
-        avatar_url: avatarUrl,
+        avatar_url: avatarUrl ?? '',
       });
       if (result.success) toast.success('Perfil atualizado.');
       else toast.error(result.error || 'Erro ao salvar.');
@@ -39,6 +44,19 @@ export function ProfileForm({ initial }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+      <ImageUploadWithCrop
+        value={avatarUrl}
+        onChange={setAvatarUrl}
+        uploadAction={uploadProfileAvatar}
+        removeAction={removeProfileAvatar}
+        aspect={1}
+        cropShape="round"
+        outputWidth={500}
+        outputHeight={500}
+        label="Avatar"
+        helpText="Aparece em emails, fichas e na sua agenda. JPG, PNG, WebP ou HEIC."
+      />
+
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         <div className="flex flex-col gap-1.5">
           <Label className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
@@ -63,21 +81,6 @@ export function ProfileForm({ initial }: Props) {
             disabled={isPending}
           />
         </div>
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <Label className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-          URL do avatar
-        </Label>
-        <Input
-          type="url"
-          value={avatarUrl}
-          onChange={(e) => setAvatarUrl(e.target.value)}
-          placeholder="https://..."
-          disabled={isPending}
-        />
-        <p className="text-xs text-muted-foreground">
-          Cole a URL pública de uma foto. Em breve o upload direto.
-        </p>
       </div>
       <div>
         <Button type="submit" variant="default" size="default" disabled={isPending} className="h-10">

@@ -1513,6 +1513,8 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
+          onboarding_completed_at: string | null
+          onboarding_step: string
           phone: string | null
           role: string
           tenant_id: string
@@ -1524,6 +1526,8 @@ export type Database = {
           email: string
           full_name?: string | null
           id: string
+          onboarding_completed_at?: string | null
+          onboarding_step?: string
           phone?: string | null
           role?: string
           tenant_id: string
@@ -1535,6 +1539,8 @@ export type Database = {
           email?: string
           full_name?: string | null
           id?: string
+          onboarding_completed_at?: string | null
+          onboarding_step?: string
           phone?: string | null
           role?: string
           tenant_id?: string
