@@ -68,7 +68,7 @@ export function ClientCombobox({ clients, value, onChange, disabled }: Props) {
         }
       />
       <PopoverContent
-        className="w-[var(--popover-anchor-width)] min-w-[280px] p-0"
+        className="w-(--anchor-width) min-w-[280px] p-0"
         align="start"
         sideOffset={6}
       >
