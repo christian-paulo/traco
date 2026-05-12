@@ -5,6 +5,7 @@ import { AcademyAdminPanel } from '@/components/academy/admin/academy-admin-pane
 import { BookingPolicyForm } from '@/components/configuracoes/booking-policy-form';
 import { MensagensTab } from '@/components/configuracoes/mensagens-tab';
 import { PrivacyForm } from '@/components/configuracoes/privacy-form';
+import { RestartOnboardingButton } from '@/components/configuracoes/restart-onboarding-button';
 import { ProceduresList } from '@/components/configuracoes/procedures-list';
 import { ProfileForm } from '@/components/configuracoes/profile-form';
 import { StudioSettingsForm } from '@/components/configuracoes/studio-settings-form';
@@ -206,13 +207,16 @@ export default async function ConfiguracoesPage({
 
         {/* Studio = Conta + Studio */}
         <TabsContent value="studio" className="mt-6 flex flex-col gap-6">
-          <div className="flex flex-col gap-1">
-            <h2 className="font-serif text-2xl font-medium tracking-tight text-foreground">
-              Studio
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Você + identidade pública do studio.
-            </p>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex flex-col gap-1">
+              <h2 className="font-serif text-2xl font-medium tracking-tight text-foreground">
+                Studio
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Você + identidade pública do studio.
+              </p>
+            </div>
+            <RestartOnboardingButton />
           </div>
 
           <Card variant="premium" className="bg-card border-0 ring-1 ring-[var(--border)] py-6">
