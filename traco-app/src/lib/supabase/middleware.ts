@@ -33,6 +33,7 @@ export async function updateSession(request: NextRequest) {
   const isProtected =
     pathname === '/' ||
     pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/onboarding') ||
     pathname.startsWith('/atendimento');
 
   if (!user && isProtected) {
@@ -51,6 +52,27 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = '/dashboard';
     return NextResponse.redirect(url);
+  }
+
+  // Gate de onboarding: redireciona usuários autenticados que ainda não
+  // completaram o wizard. Apenas pra rotas do app, deixa /onboarding livre.
+  if (
+    user &&
+    (pathname === '/dashboard' ||
+      pathname.startsWith('/dashboard/') ||
+      pathname.startsWith('/atendimento'))
+  ) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('onboarding_completed_at')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (profile && profile.onboarding_completed_at === null) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/onboarding';
+      return NextResponse.redirect(url);
+    }
   }
 
   return supabaseResponse;
