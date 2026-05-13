@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  BarChart3,
   Calendar,
   GraduationCap,
   Inbox,
@@ -50,6 +51,7 @@ const NAV: NavItem[] = [
   { label: 'Clientes', href: '/dashboard/clientes', icon: Users, group: 'operacao' },
 
   // Negócio — finanças e metas
+  { label: 'Performance', href: '/dashboard/performance', icon: BarChart3, group: 'negocio' },
   { label: 'Financeiro', href: '/dashboard/financeiro', icon: TrendingUp, group: 'negocio' },
 
   // Crescimento — capacitação e divulgação
