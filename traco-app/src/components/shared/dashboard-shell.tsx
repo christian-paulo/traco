@@ -30,7 +30,7 @@ export function DashboardShell({ profile, badges, children }: DashboardShellProp
           <Sidebar profile={profile} onNavigate={() => setOpen(false)} badges={badges} />
         </SheetContent>
 
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-w-0 flex-1 flex-col overflow-x-clip">
           <Topbar profile={profile} />
           <main className="flex-1 px-4 py-6 sm:px-6 lg:px-10 lg:py-10">{children}</main>
         </div>

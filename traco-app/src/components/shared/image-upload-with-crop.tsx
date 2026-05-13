@@ -147,19 +147,19 @@ export function ImageUploadWithCrop({
         </p>
       ) : null}
 
-      <div className="flex items-start gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading || removing}
           className={cn(
-            'group relative shrink-0 overflow-hidden border-2 border-dashed border-cream-dark bg-cream/40 transition-all',
+            'group relative shrink-0 self-start overflow-hidden border-2 border-dashed border-cream-dark bg-cream/40 transition-all',
             'hover:border-[var(--gold)]/60 hover:bg-cream/60',
             'focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)]/40',
             'disabled:cursor-not-allowed disabled:opacity-50',
             isRound ? 'rounded-full' : 'rounded-lg',
             previewClassName ??
-              (isRound ? 'size-24 sm:size-28' : 'h-32 w-full max-w-[280px] sm:h-36'),
+              (isRound ? 'size-24 sm:size-28' : 'h-32 w-full max-w-full sm:h-36 sm:max-w-[280px]'),
           )}
           aria-label={value ? 'Trocar foto' : 'Adicionar foto'}
         >
