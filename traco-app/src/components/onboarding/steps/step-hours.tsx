@@ -22,21 +22,34 @@ type Props = {
   initial: HourRow[];
 };
 
-function makeDefaultHours(): HourRow[] {
-  return Array.from({ length: 7 }, (_, day) => ({
-    day_of_week: day,
-    start_time: '09:00',
-    end_time: '18:00',
-    // Default: Segunda a Sexta ativo, fim de semana off
-    is_active: day >= 1 && day <= 5,
-  }));
+// Postgres retorna time como "HH:MM:SS"; o input/schema espera "HH:MM"
+function trimTime(t: string): string {
+  return t.length > 5 ? t.slice(0, 5) : t;
+}
+
+function normalizeInitial(initial: HourRow[]): HourRow[] {
+  const byDay = new Map(initial.map((h) => [h.day_of_week, h]));
+  return Array.from({ length: 7 }, (_, day) => {
+    const found = byDay.get(day);
+    if (found) {
+      return {
+        day_of_week: day,
+        start_time: trimTime(found.start_time),
+        end_time: trimTime(found.end_time),
+        is_active: found.is_active,
+      };
+    }
+    return {
+      day_of_week: day,
+      start_time: '09:00',
+      end_time: '18:00',
+      is_active: day >= 1 && day <= 5,
+    };
+  });
 }
 
 export function StepHours({ initial }: Props) {
-  const [hours, setHours] = useState<HourRow[]>(() => {
-    if (initial.length === 7) return [...initial].sort((a, b) => a.day_of_week - b.day_of_week);
-    return makeDefaultHours();
-  });
+  const [hours, setHours] = useState<HourRow[]>(() => normalizeInitial(initial));
   const [pending, startTransition] = useTransition();
 
   const activeCount = hours.filter((h) => h.is_active).length;
