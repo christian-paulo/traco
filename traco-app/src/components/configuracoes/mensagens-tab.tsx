@@ -68,7 +68,7 @@ export function MensagensTab({ templates }: Props) {
         value={activeCategory}
         onValueChange={(v) => setActiveCategory(v as MessageTemplateCategory)}
       >
-        <TabsList className="flex-wrap">
+        <TabsList>
           {MESSAGE_TEMPLATE_CATEGORIES.map((cat) => (
             <TabsTrigger key={cat} value={cat} className="gap-2">
               {MESSAGE_TEMPLATE_CATEGORY_LABELS[cat]}

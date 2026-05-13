@@ -196,7 +196,7 @@ export default async function ConfiguracoesPage({
       ) : null}
 
       <Tabs defaultValue={tab}>
-        <TabsList className="h-auto flex-wrap">
+        <TabsList>
           <TabsTrigger value="studio">Studio</TabsTrigger>
           <TabsTrigger value="procedimentos">Procedimentos</TabsTrigger>
           <TabsTrigger value="agendamento">Agendamento</TabsTrigger>
