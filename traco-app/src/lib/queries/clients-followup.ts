@@ -1,8 +1,59 @@
 import 'server-only';
 
+import { cache } from 'react';
+
 import { createClient } from '@/lib/supabase/server';
 
 const COMPLETED_STATUSES = ['completed', 'confirmed', 'pending'];
+
+/**
+ * Conta retornos atrasados (último atendimento mais antigo que o
+ * default_return_days do procedimento). Cacheado por request via React cache().
+ * Usado no badge da sidebar e no card de retornos do dashboard.
+ */
+export const countOverdueReturns = cache(async (): Promise<number> => {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('appointments')
+    .select(
+      'client_id, performed_at, return_due_date, procedures(default_return_days)',
+    )
+    .in('status', COMPLETED_STATUSES)
+    .order('performed_at', { ascending: false });
+
+  type Row = {
+    client_id: string;
+    performed_at: string;
+    return_due_date: string | null;
+    procedures: { default_return_days: number } | { default_return_days: number }[] | null;
+  };
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayMs = today.getTime();
+  const seen = new Set<string>();
+  let count = 0;
+
+  for (const raw of ((data ?? []) as unknown as Row[])) {
+    if (seen.has(raw.client_id)) continue;
+    seen.add(raw.client_id);
+
+    // Prefere return_due_date se presente; senão calcula via procedure default
+    let expectedMs: number | null = null;
+    if (raw.return_due_date) {
+      expectedMs = new Date(`${raw.return_due_date}T00:00:00`).getTime();
+    } else {
+      const proc = Array.isArray(raw.procedures) ? raw.procedures[0] : raw.procedures;
+      if (proc?.default_return_days) {
+        expectedMs = new Date(raw.performed_at).getTime() + proc.default_return_days * 86_400_000;
+      }
+    }
+
+    if (expectedMs !== null && expectedMs < todayMs) count += 1;
+  }
+
+  return count;
+});
 
 export type ClientReturnRow = {
   clientId: string;

@@ -5,8 +5,10 @@ import { redirect } from 'next/navigation';
 import { ActiveGoalsCard } from '@/components/dashboard/active-goals-card';
 import { ActiveReactionsCard } from '@/components/dashboard/active-reactions-card';
 import { ContinueAcademyCard } from '@/components/dashboard/continue-academy-card';
+import { DailyWelcomeToast } from '@/components/dashboard/daily-welcome-toast';
 import { PinnedNotesCard } from '@/components/dashboard/pinned-notes-card';
 import { RecurringExpensesCard } from '@/components/dashboard/recurring-expenses-card';
+import { ReturnsAlertCard } from '@/components/dashboard/returns-alert-card';
 import { TodayAppointmentsCard } from '@/components/dashboard/today-appointments-card';
 import { SeedTrigger } from '@/components/dashboard/seed-trigger';
 import { UnseenAchievementsCard } from '@/components/dashboard/unseen-achievements-card';
@@ -20,6 +22,7 @@ import {
   getTodayAppointments,
 } from '@/lib/queries/dashboard';
 import { getNextLessonForUser } from '@/lib/queries/academy';
+import { getClientsForReturn } from '@/lib/queries/clients-followup';
 import { listRecurringExpensesCreatedToday } from '@/lib/queries/expenses';
 import { listActiveGoals, listUnseenAchievements } from '@/lib/queries/goals';
 import { getCurrentProfile } from '@/lib/queries/profile';
@@ -99,6 +102,7 @@ export default async function DashboardPage() {
     unseenAchievements,
     recurringExpensesToday,
     nextLesson,
+    upcomingReturns,
     profileRowResult,
     appointmentsHeadResult,
     fichaHeadResult,
@@ -113,6 +117,7 @@ export default async function DashboardPage() {
     listUnseenAchievements(),
     listRecurringExpensesCreatedToday(),
     getNextLessonForUser(),
+    getClientsForReturn({ daysAfter: 30, windowDays: 7 }),
     supabase.from('profiles').select('phone').eq('id', profile.id).maybeSingle(),
     supabase.from('appointments').select('id').limit(1),
     supabase.from('anamnesis_forms').select('id').limit(1),
@@ -154,7 +159,16 @@ export default async function DashboardPage() {
         </p>
       </header>
 
+      <DailyWelcomeToast
+        firstName={firstName || 'designer'}
+        overdueReturns={upcomingReturns.filter((r) => r.isOverdue).length}
+        upcomingReturns={upcomingReturns.length}
+        todayAppointments={todayAppointments.length}
+      />
+
       <UnseenAchievementsCard achievements={unseenAchievements} />
+
+      <ReturnsAlertCard returns={upcomingReturns} totalCount={upcomingReturns.length} />
 
       <RecurringExpensesCard expenses={recurringExpensesToday} />
 

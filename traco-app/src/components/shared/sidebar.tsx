@@ -26,7 +26,7 @@ type NavItem = {
   label: string;
   href: string;
   icon: LucideIcon;
-  badgeKey?: 'pendingDrafts';
+  badgeKey?: 'pendingDrafts' | 'overdueReturns';
   group: NavGroup;
 };
 
@@ -48,7 +48,13 @@ const NAV: NavItem[] = [
     badgeKey: 'pendingDrafts',
     group: 'operacao',
   },
-  { label: 'Clientes', href: '/dashboard/clientes', icon: Users, group: 'operacao' },
+  {
+    label: 'Clientes',
+    href: '/dashboard/clientes',
+    icon: Users,
+    badgeKey: 'overdueReturns',
+    group: 'operacao',
+  },
 
   // Negócio — finanças e metas
   { label: 'Performance', href: '/dashboard/performance', icon: BarChart3, group: 'negocio' },
@@ -69,6 +75,7 @@ export type SidebarProfile = {
 
 export type SidebarBadges = {
   pendingDrafts?: number;
+  overdueReturns?: number;
 };
 
 type SidebarProps = {
@@ -141,6 +148,11 @@ export function Sidebar({ profile, onNavigate, badges }: SidebarProps) {
                 {item.badgeKey === 'pendingDrafts' && badges?.pendingDrafts ? (
                   <span className="bg-[var(--gold)] text-ink ml-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-medium tracking-normal">
                     {badges.pendingDrafts}
+                  </span>
+                ) : null}
+                {item.badgeKey === 'overdueReturns' && badges?.overdueReturns ? (
+                  <span className="ml-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-medium tracking-normal text-white">
+                    {badges.overdueReturns}
                   </span>
                 ) : null}
               </Link>

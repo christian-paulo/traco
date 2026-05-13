@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 
 import { DashboardShell } from '@/components/shared/dashboard-shell';
 import { countPendingDrafts } from '@/lib/queries/booking-drafts';
+import { countOverdueReturns } from '@/lib/queries/clients-followup';
 import { getCurrentProfile } from '@/lib/queries/profile';
 
 export default async function DashboardLayout({
@@ -14,12 +15,10 @@ export default async function DashboardLayout({
     redirect('/login');
   }
 
-  let pendingDrafts = 0;
-  try {
-    pendingDrafts = await countPendingDrafts();
-  } catch {
-    // tabela pode ainda não existir se a migração não rodou — não bloqueia
-  }
+  const [pendingDrafts, overdueReturns] = await Promise.all([
+    countPendingDrafts().catch(() => 0),
+    countOverdueReturns().catch(() => 0),
+  ]);
 
   return (
     <DashboardShell
@@ -28,7 +27,7 @@ export default async function DashboardLayout({
         email: profile.email,
         avatarUrl: profile.avatarUrl,
       }}
-      badges={{ pendingDrafts }}
+      badges={{ pendingDrafts, overdueReturns }}
     >
       {children}
     </DashboardShell>
