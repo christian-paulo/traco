@@ -2,7 +2,9 @@ import type { Metadata } from 'next';
 
 import { ClientsEmptyState } from '@/components/clients/clients-empty-state';
 import { ClientsFilterPills } from '@/components/clients/clients-filter-pills';
+import { ClientsMissingView } from '@/components/clients/clients-missing-view';
 import { ClientsReportView } from '@/components/clients/clients-report-view';
+import { ClientsReturnView } from '@/components/clients/clients-return-view';
 import { ClientsTable } from '@/components/clients/clients-table';
 import { ClientsToolbar } from '@/components/clients/clients-toolbar';
 import { NewClientButton } from '@/components/clients/new-client-button';
@@ -15,16 +17,24 @@ import {
   listClients,
 } from '@/lib/queries/clients';
 import {
+  getClientsForReturn,
+  getMissingClients,
+} from '@/lib/queries/clients-followup';
+import {
   getClientsReport,
   type ClientReportType,
 } from '@/lib/queries/clients-report';
-import { getDefaultMessageTemplate } from '@/lib/queries/message-templates';
+import {
+  getDefaultMessageTemplate,
+} from '@/lib/queries/message-templates';
 import {
   isPeriodPreset,
   resolvePeriod,
   type PeriodPreset,
 } from '@/lib/performance/period';
+import { listProcedures } from '@/lib/queries/procedures';
 import { getCurrentProfile } from '@/lib/queries/profile';
+import { getCurrentStudio } from '@/lib/queries/studio';
 import { createClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = {
@@ -39,7 +49,29 @@ type SearchParams = Promise<{
   from?: string;
   to?: string;
   tipo?: string;
+  dias?: string;
+  procedimento?: string;
+  min?: string;
 }>;
+
+type ClientsFilter = 'todas' | 'retornos' | 'sumidos' | 'recuperar' | 'relatorios';
+
+function parseFiltro(v: string | undefined): ClientsFilter {
+  if (
+    v === 'retornos' ||
+    v === 'sumidos' ||
+    v === 'recuperar' ||
+    v === 'relatorios'
+  ) {
+    return v;
+  }
+  return 'todas';
+}
+
+function parseIntOr(v: string | undefined, fallback: number): number {
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+}
 
 const DEFAULT_WHATSAPP_TEMPLATE =
   'Olá! Vi que faz {dias} dias do meu último {procedimento}. Gostaria de agendar meu retorno.';
@@ -52,12 +84,89 @@ export default async function ClientesPage({
   const params = await searchParams;
   const search = params.search ?? '';
   const tag = params.tag ?? '';
-  const filtro: 'todas' | 'recuperar' | 'relatorios' =
-    params.filtro === 'recuperar'
-      ? 'recuperar'
-      : params.filtro === 'relatorios'
-        ? 'relatorios'
-        : 'todas';
+  const filtro = parseFiltro(params.filtro);
+
+  if (filtro === 'retornos') {
+    const days = parseIntOr(params.dias, 30);
+    const procedureId = params.procedimento || null;
+    const profile = await getCurrentProfile();
+    const studio = await getCurrentStudio();
+    const [rows, procedures, reminderTemplate, recoverClients] = await Promise.all([
+      getClientsForReturn({
+        daysAfter: days,
+        procedureId: procedureId ?? undefined,
+        windowDays: 14,
+      }),
+      listProcedures(false),
+      getDefaultMessageTemplate('reminder'),
+      getClientsToRecover(),
+    ]);
+
+    return (
+      <div className="flex flex-col gap-8">
+        <header className="flex flex-col gap-2">
+          <div className="h-px w-8 bg-[var(--gold)]" />
+          <h1 className="font-serif text-4xl font-medium tracking-tight text-foreground">
+            Clientes
+          </h1>
+          <p className="text-xs font-medium uppercase tracking-[0.3em] text-muted-foreground">
+            Retornos — quem está chegando a hora de voltar
+          </p>
+        </header>
+
+        <ClientsFilterPills recoverCount={recoverClients.length} active="retornos" />
+
+        <ClientsReturnView
+          rows={rows}
+          procedures={procedures}
+          selectedDays={days}
+          selectedProcedureId={procedureId}
+          reminderTemplate={reminderTemplate?.body ?? null}
+          studioName={studio?.name ?? null}
+          studioAddress={studio?.address ?? null}
+          designerName={profile?.fullName ?? null}
+        />
+      </div>
+    );
+  }
+
+  if (filtro === 'sumidos') {
+    const days = parseIntOr(params.dias, 60);
+    const minAppts = parseIntOr(params.min, 2);
+    const profile = await getCurrentProfile();
+    const studio = await getCurrentStudio();
+    const [rows, recoveryTemplate, recoverClients] = await Promise.all([
+      getMissingClients({ minDaysSinceLast: days, minAppointments: minAppts }),
+      getDefaultMessageTemplate('recovery'),
+      getClientsToRecover(),
+    ]);
+
+    return (
+      <div className="flex flex-col gap-8">
+        <header className="flex flex-col gap-2">
+          <div className="h-px w-8 bg-[var(--gold)]" />
+          <h1 className="font-serif text-4xl font-medium tracking-tight text-foreground">
+            Clientes
+          </h1>
+          <p className="text-xs font-medium uppercase tracking-[0.3em] text-muted-foreground">
+            Sumidas — fiéis que pararam de aparecer
+          </p>
+        </header>
+
+        <ClientsFilterPills recoverCount={recoverClients.length} active="sumidos" />
+
+        <ClientsMissingView
+          rows={rows}
+          selectedDays={days}
+          selectedMinAppointments={minAppts}
+          recoveryTemplate={recoveryTemplate?.body ?? null}
+          studioName={studio?.name ?? null}
+          studioAddress={studio?.address ?? null}
+          designerName={profile?.fullName ?? null}
+        />
+      </div>
+    );
+  }
 
   if (filtro === 'relatorios') {
     const preset: PeriodPreset = isPeriodPreset(params.range)
