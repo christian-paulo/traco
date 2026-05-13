@@ -54,21 +54,36 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Gate de onboarding: redireciona usuários autenticados que ainda não
-  // completaram o wizard. Apenas pra rotas do app, deixa /onboarding livre.
+  // Gate de onboarding: lê do user_metadata (já vem no JWT, sem hit no DB).
+  // Usuários antigos que não têm a flag setada caem no fallback de DB
+  // (apenas o 1º request faz a query — a action de onboarding hidrata o
+  // metadata e os requests seguintes leem só do JWT).
   if (
     user &&
     (pathname === '/dashboard' ||
       pathname.startsWith('/dashboard/') ||
       pathname.startsWith('/atendimento'))
   ) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('onboarding_completed_at')
-      .eq('id', user.id)
-      .maybeSingle();
+    const meta = (user.user_metadata as
+      | { onboarding_completed?: boolean }
+      | null) ?? null;
 
-    if (profile && profile.onboarding_completed_at === null) {
+    let onboardingDone = meta?.onboarding_completed;
+
+    if (onboardingDone === undefined) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('onboarding_completed_at')
+        .eq('id', user.id)
+        .maybeSingle();
+      onboardingDone = profile?.onboarding_completed_at != null;
+      // Hidrata o JWT pra próximos requests evitarem essa query
+      await supabase.auth.updateUser({
+        data: { onboarding_completed: onboardingDone },
+      });
+    }
+
+    if (onboardingDone !== true) {
       const url = request.nextUrl.clone();
       url.pathname = '/onboarding';
       return NextResponse.redirect(url);

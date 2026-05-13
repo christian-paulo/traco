@@ -2,7 +2,7 @@
 
 import { CalendarDays, ChevronDown } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +27,7 @@ export function PeriodFilter({ current }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [, startTransition] = useTransition();
   const [customOpen, setCustomOpen] = useState(false);
   const [customFrom, setCustomFrom] = useState(current.fromDate);
   const [customTo, setCustomTo] = useState(current.toDate);
@@ -38,7 +39,9 @@ export function PeriodFilter({ current }: Props) {
       params.delete('from');
       params.delete('to');
     }
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    startTransition(() => {
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    });
   }
 
   function applyCustom() {
@@ -46,7 +49,9 @@ export function PeriodFilter({ current }: Props) {
     params.set('range', 'personalizado');
     params.set('from', customFrom);
     params.set('to', customTo);
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    startTransition(() => {
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    });
     setCustomOpen(false);
   }
 

@@ -101,8 +101,11 @@ export default async function ConfiguracoesPage({
     ? await Promise.all([listWorkingHours(professional.id), listTimeOff(professional.id)])
     : [[], []];
 
-  // Admin extras (só busca se for admin)
-  const adminData = admin
+  const tab = parseTab(params.tab, admin);
+
+  // Admin extras: só busca se for admin E a aba admin estiver aberta —
+  // evita pagar 3 queries em toda navegação por Configurações.
+  const adminData = admin && tab === 'admin'
     ? await Promise.all([
         supabase.from('courses').select('*').order('sort_order', { ascending: true }),
         supabase
@@ -116,8 +119,6 @@ export default async function ConfiguracoesPage({
           .order('created_at', { ascending: false }),
       ])
     : null;
-
-  const tab = parseTab(params.tab, admin);
 
   const sharingInitial = sharingPrefs
     ? {

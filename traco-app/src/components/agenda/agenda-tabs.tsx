@@ -1,6 +1,7 @@
 'use client';
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useTransition } from 'react';
 
 import { AgendaPageContent } from '@/components/agenda/agenda-page-content';
 import type { AgendaAppointment } from '@/components/agenda/agenda-day-view';
@@ -40,11 +41,14 @@ export function AgendaTabs(props: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [, startTransition] = useTransition();
 
   function handleTabChange(next: string) {
     const params = new URLSearchParams(searchParams.toString());
     params.set('tab', next);
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    startTransition(() => {
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    });
   }
 
   return (

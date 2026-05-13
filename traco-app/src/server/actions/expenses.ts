@@ -61,7 +61,6 @@ export async function createExpense(input: ExpenseInput): Promise<CreateResult> 
 
   revalidatePath('/dashboard/despesas');
   revalidatePath('/dashboard/financeiro');
-  revalidatePath('/dashboard');
   return { success: true, data: { id: data.id } };
 }
 
@@ -99,7 +98,6 @@ export async function updateExpense(
 
   revalidatePath('/dashboard/despesas');
   revalidatePath('/dashboard/financeiro');
-  revalidatePath('/dashboard');
   return { success: true };
 }
 
@@ -110,7 +108,6 @@ export async function deleteExpense(id: string): Promise<SimpleResult> {
 
   revalidatePath('/dashboard/despesas');
   revalidatePath('/dashboard/financeiro');
-  revalidatePath('/dashboard');
   return { success: true };
 }
 

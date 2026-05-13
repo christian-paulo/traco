@@ -62,7 +62,6 @@ export async function createGoal(input: GoalInput): Promise<CreateResult> {
   await evaluateAbsoluteAchievements(profile.tenantId);
 
   revalidatePath('/dashboard/metas');
-  revalidatePath('/dashboard');
   return { success: true, data: { id: data.id } };
 }
 
@@ -92,7 +91,6 @@ export async function updateGoal(
 
   await supabase.rpc('update_goal_progress', { p_goal_id: id });
   revalidatePath('/dashboard/metas');
-  revalidatePath('/dashboard');
   return { success: true };
 }
 
@@ -101,7 +99,6 @@ export async function deleteGoal(id: string): Promise<SimpleResult> {
   const { error } = await supabase.from('goals').delete().eq('id', id);
   if (error) return { success: false, error: error.message };
   revalidatePath('/dashboard/metas');
-  revalidatePath('/dashboard');
   return { success: true };
 }
 
@@ -113,7 +110,6 @@ export async function cancelGoal(id: string): Promise<SimpleResult> {
     .eq('id', id);
   if (error) return { success: false, error: error.message };
   revalidatePath('/dashboard/metas');
-  revalidatePath('/dashboard');
   return { success: true };
 }
 
@@ -161,6 +157,5 @@ export async function markAchievementsSeen(): Promise<SimpleResult> {
     .is('seen_at', null);
   if (error) return { success: false, error: error.message };
   revalidatePath('/dashboard/metas');
-  revalidatePath('/dashboard');
   return { success: true };
 }

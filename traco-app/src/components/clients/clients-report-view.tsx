@@ -3,6 +3,7 @@
 import { Trophy, UserPlus, Users } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useTransition } from 'react';
 
 import { PeriodFilter } from '@/components/performance/period-filter';
 import { Card, CardContent } from '@/components/ui/card';
@@ -28,11 +29,14 @@ export function ClientsReportView({ report, range }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [, startTransition] = useTransition();
 
   function setType(type: ClientReportType) {
     const params = new URLSearchParams(searchParams.toString());
     params.set('tipo', type);
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    startTransition(() => {
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    });
   }
 
   return (

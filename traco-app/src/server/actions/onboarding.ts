@@ -34,6 +34,10 @@ export async function advanceOnboardingStep(
       })
       .eq('id', profile.id);
     if (error) return { success: false, error: error.message };
+    // Espelha flag em user_metadata pro middleware ler sem hit no DB
+    await supabase.auth.updateUser({
+      data: { onboarding_completed: true },
+    });
     revalidatePath('/onboarding');
     revalidatePath('/dashboard');
     return { success: true };
@@ -63,6 +67,10 @@ export async function restartOnboarding(): Promise<SimpleResult> {
     .eq('id', profile.id);
 
   if (error) return { success: false, error: error.message };
+  // Limpa flag pro middleware redirecionar de novo
+  await supabase.auth.updateUser({
+    data: { onboarding_completed: false },
+  });
   revalidatePath('/dashboard');
   revalidatePath('/onboarding');
   redirect('/onboarding');

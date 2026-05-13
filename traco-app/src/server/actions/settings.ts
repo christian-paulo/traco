@@ -65,7 +65,6 @@ export async function updateProfile(input: ProfileInput): Promise<SimpleResult> 
 
   if (error) return { success: false, error: error.message };
 
-  revalidatePath('/dashboard');
   revalidatePath('/dashboard/configuracoes');
   return { success: true };
 }
