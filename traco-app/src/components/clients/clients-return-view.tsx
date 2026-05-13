@@ -2,10 +2,21 @@
 
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Briefcase, Calendar, ChevronDown, MessageCircle, RotateCcw } from 'lucide-react';
+import {
+  Briefcase,
+  Calendar,
+  CheckCircle2,
+  ChevronDown,
+  Clock4,
+  Loader2,
+  MessageCircle,
+  RotateCcw,
+  XCircle,
+} from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState, useTransition } from 'react';
+import { toast } from 'sonner';
 
 import {
   Popover,
@@ -16,6 +27,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { getInitials } from '@/lib/format';
 import type { ClientReturnRow } from '@/lib/queries/clients-followup';
+import { isRecentlyContacted } from '@/lib/queries/clients-followup';
 import type { ProcedureRow } from '@/lib/queries/procedures';
 import { cn } from '@/lib/utils';
 import {
@@ -23,6 +35,7 @@ import {
   buildWhatsappUrl,
   renderTemplate,
 } from '@/lib/whatsapp';
+import { logFollowup, resolveFollowup } from '@/server/actions/followups';
 
 export const DAYS_PRESETS = [15, 21, 30, 40, 60, 90, 180] as const;
 
@@ -252,34 +265,60 @@ function ReturnRow({
 }: RowProps) {
   const expectedDate = new Date(`${row.expectedReturnDate}T00:00:00`);
   const lastDate = new Date(row.lastAppointmentDate);
+  const [pendingFollowup, startFollowupTransition] = useTransition();
 
-  const status = row.isOverdue
-    ? { label: 'Atrasada', tone: 'border-red-200 bg-red-50/60 ring-red-100' }
-    : row.daysUntilReturn === 0
-      ? { label: 'Hoje', tone: 'border-amber-300 bg-amber-50/70 ring-amber-200' }
-      : row.daysUntilReturn <= 3
-        ? { label: 'Esta semana', tone: 'border-amber-300 bg-amber-50/60 ring-amber-200' }
-        : { label: 'Próximas 2 semanas', tone: 'border-[var(--gold)]/40 bg-[var(--gold)]/[0.06] ring-[var(--gold)]/30' };
+  const recentlyContacted = isRecentlyContacted(row.lastFollowup);
+
+  const status = recentlyContacted
+    ? {
+        label: 'Contatada',
+        tone: 'border-emerald-200 bg-emerald-50/60 ring-emerald-100 opacity-80',
+      }
+    : row.isOverdue
+      ? { label: 'Atrasada', tone: 'border-red-200 bg-red-50/60 ring-red-100' }
+      : row.daysUntilReturn === 0
+        ? { label: 'Hoje', tone: 'border-amber-300 bg-amber-50/70 ring-amber-200' }
+        : row.daysUntilReturn <= 3
+          ? { label: 'Esta semana', tone: 'border-amber-300 bg-amber-50/60 ring-amber-200' }
+          : { label: 'Próximas 2 semanas', tone: 'border-[var(--gold)]/40 bg-[var(--gold)]/[0.06] ring-[var(--gold)]/30' };
 
   function handleWhatsapp() {
     if (!reminderTemplate) {
       const fallback = `Oi ${row.fullName.split(' ')[0]}! Está chegando a hora do seu retorno do ${row.lastProcedureName ?? 'procedimento'} 💛 Quer marcar?`;
       const url = buildWhatsappUrl(row.phone, fallback);
       if (url) window.open(url, '_blank', 'noopener,noreferrer');
-      return;
+    } else {
+      const vars = buildAppointmentVars({
+        clientFullName: row.fullName,
+        procedureName: row.lastProcedureName ?? 'procedimento',
+        scheduledStartAt: row.expectedReturnDate + 'T09:00:00',
+        price: 0,
+        designerName,
+        studioName,
+        studioAddress,
+      });
+      const message = renderTemplate(reminderTemplate, vars);
+      const url = buildWhatsappUrl(row.phone, message);
+      if (url) window.open(url, '_blank', 'noopener,noreferrer');
     }
-    const vars = buildAppointmentVars({
-      clientFullName: row.fullName,
-      procedureName: row.lastProcedureName ?? 'procedimento',
-      scheduledStartAt: row.expectedReturnDate + 'T09:00:00',
-      price: 0,
-      designerName,
-      studioName,
-      studioAddress,
+    // Registra o follow-up em background — não bloqueia a abertura do WhatsApp
+    startFollowupTransition(async () => {
+      const result = await logFollowup({ clientId: row.clientId, channel: 'whatsapp' });
+      if (!result.success) toast.error(result.error || 'Erro ao registrar follow-up.');
     });
-    const message = renderTemplate(reminderTemplate, vars);
-    const url = buildWhatsappUrl(row.phone, message);
-    if (url) window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  function handleResolve(outcome: 'scheduled' | 'declined') {
+    startFollowupTransition(async () => {
+      const result = await resolveFollowup({ clientId: row.clientId, outcome });
+      if (result.success) {
+        toast.success(
+          outcome === 'scheduled' ? 'Cliente marcada como agendou.' : 'Cliente arquivada.',
+        );
+      } else {
+        toast.error(result.error || 'Erro ao salvar.');
+      }
+    });
   }
 
   return (
@@ -340,18 +379,60 @@ function ReturnRow({
         </li>
       </ul>
 
-      {row.phone ? (
+      {recentlyContacted && row.lastFollowup ? (
+        <div className="flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50/60 px-3 py-2 text-xs text-emerald-900">
+          <Clock4 className="size-3.5 shrink-0" />
+          <span className="flex-1">
+            Contatada{' '}
+            {format(new Date(row.lastFollowup.contactedAt), "dd/MM 'às' HH:mm", {
+              locale: ptBR,
+            })}{' '}
+            por WhatsApp · aguardando resposta
+          </span>
+        </div>
+      ) : null}
+
+      <div className="flex flex-wrap items-center gap-2">
+        {row.phone ? (
+          <Button
+            type="button"
+            variant="premium"
+            size="sm"
+            onClick={handleWhatsapp}
+            disabled={pendingFollowup}
+            className="bg-emerald-600 text-white hover:bg-emerald-700"
+          >
+            {pendingFollowup ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
+              <MessageCircle className="size-3.5" />
+            )}
+            {recentlyContacted ? 'Reenviar' : 'Avisar no WhatsApp'}
+          </Button>
+        ) : null}
         <Button
           type="button"
-          variant="premium"
+          variant="ghost"
           size="sm"
-          onClick={handleWhatsapp}
-          className="self-start bg-emerald-600 text-white hover:bg-emerald-700"
+          onClick={() => handleResolve('scheduled')}
+          disabled={pendingFollowup}
+          className="text-emerald-700 hover:bg-emerald-50"
         >
-          <MessageCircle className="size-3.5" />
-          Avisar no WhatsApp
+          <CheckCircle2 className="size-3.5" />
+          Agendou
         </Button>
-      ) : null}
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => handleResolve('declined')}
+          disabled={pendingFollowup}
+          className="text-muted-foreground hover:bg-cream"
+        >
+          <XCircle className="size-3.5" />
+          Não vai voltar
+        </Button>
+      </div>
     </li>
   );
 }

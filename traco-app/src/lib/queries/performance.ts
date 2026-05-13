@@ -11,6 +11,9 @@ export type PerformanceMetrics = {
   uniqueClients: number;
   totalMinutes: number;
   daysWithAppointments: number;
+  followupsContacted: number;
+  followupsScheduled: number;
+  conversionRate: number; // 0..1 — scheduled/contacted
 };
 
 const COMPLETED_STATUSES = ['completed', 'confirmed', 'pending'];
@@ -33,7 +36,7 @@ export async function getPerformanceMetrics(
   const fromDate = fromIso.slice(0, 10);
   const toDate = toIso.slice(0, 10);
 
-  const [appointmentsResult, expensesResult] = await Promise.all([
+  const [appointmentsResult, expensesResult, followupsResult] = await Promise.all([
     supabase
       .from('appointments')
       .select('client_id, performed_at, price, scheduled_start_at, scheduled_end_at, status')
@@ -45,10 +48,16 @@ export async function getPerformanceMetrics(
       .select('amount')
       .gte('date', fromDate)
       .lte('date', toDate),
+    supabase
+      .from('client_followups')
+      .select('client_id, outcome, contacted_at')
+      .gte('contacted_at', fromIso)
+      .lte('contacted_at', toIso),
   ]);
 
   const appointments = appointmentsResult.data ?? [];
   const expenses = expensesResult.data ?? [];
+  const followups = followupsResult.data ?? [];
 
   const revenue = appointments.reduce((sum, a) => sum + Number(a.price ?? 0), 0);
   const expensesTotal = expenses.reduce((sum, e) => sum + Number(e.amount ?? 0), 0);
@@ -75,6 +84,19 @@ export async function getPerformanceMetrics(
     totalMinutes += 60;
   }
 
+  // Follow-ups: contatadas únicas e quantas marcaram outcome=scheduled
+  const contactedClients = new Set<string>();
+  const scheduledClients = new Set<string>();
+  for (const f of followups as Array<{ client_id: string | null; outcome: string }>) {
+    if (!f.client_id) continue;
+    contactedClients.add(f.client_id);
+    if (f.outcome === 'scheduled') scheduledClients.add(f.client_id);
+  }
+  const followupsContacted = contactedClients.size;
+  const followupsScheduled = scheduledClients.size;
+  const conversionRate =
+    followupsContacted > 0 ? followupsScheduled / followupsContacted : 0;
+
   return {
     range: { from: fromIso, to: toIso },
     revenue,
@@ -84,5 +106,8 @@ export async function getPerformanceMetrics(
     uniqueClients: clientSet.size,
     totalMinutes,
     daysWithAppointments: daySet.size,
+    followupsContacted,
+    followupsScheduled,
+    conversionRate,
   };
 }

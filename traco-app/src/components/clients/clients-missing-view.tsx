@@ -22,6 +22,7 @@ import {
   buildWhatsappUrl,
   renderTemplate,
 } from '@/lib/whatsapp';
+import { logFollowup } from '@/server/actions/followups';
 
 export const DAYS_OPTIONS = [30, 45, 60, 90, 120, 180, 365] as const;
 export const MIN_APPTS_OPTIONS = [1, 2, 3, 5, 10] as const;
@@ -213,23 +214,25 @@ function MissingRow({
     if (!recoveryTemplate) {
       const url = buildWhatsappUrl(row.phone, fallback);
       if (url) window.open(url, '_blank', 'noopener,noreferrer');
-      return;
+    } else {
+      const vars = buildAppointmentVars({
+        clientFullName: row.fullName,
+        procedureName: 'procedimento',
+        scheduledStartAt: new Date().toISOString(),
+        price: 0,
+        designerName,
+        studioName,
+        studioAddress,
+      });
+      const message = renderTemplate(recoveryTemplate, {
+        ...vars,
+        dias: String(row.daysSinceLast),
+      });
+      const url = buildWhatsappUrl(row.phone, message);
+      if (url) window.open(url, '_blank', 'noopener,noreferrer');
     }
-    const vars = buildAppointmentVars({
-      clientFullName: row.fullName,
-      procedureName: 'procedimento',
-      scheduledStartAt: new Date().toISOString(),
-      price: 0,
-      designerName,
-      studioName,
-      studioAddress,
-    });
-    const message = renderTemplate(recoveryTemplate, {
-      ...vars,
-      dias: String(row.daysSinceLast),
-    });
-    const url = buildWhatsappUrl(row.phone, message);
-    if (url) window.open(url, '_blank', 'noopener,noreferrer');
+    // Registra follow-up em background (fire-and-forget)
+    void logFollowup({ clientId: row.clientId, channel: 'whatsapp' });
   }
 
   return (

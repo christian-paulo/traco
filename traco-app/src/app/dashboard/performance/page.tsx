@@ -64,6 +64,9 @@ export default async function PerformancePage({
           appointmentsCount={metrics.appointmentsCount}
           uniqueClients={metrics.uniqueClients}
           totalMinutes={metrics.totalMinutes}
+          followupsContacted={metrics.followupsContacted}
+          followupsScheduled={metrics.followupsScheduled}
+          conversionRate={metrics.conversionRate}
           shareHref={shareHref}
         />
       </div>

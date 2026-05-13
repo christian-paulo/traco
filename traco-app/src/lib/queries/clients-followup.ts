@@ -55,6 +55,13 @@ export const countOverdueReturns = cache(async (): Promise<number> => {
   return count;
 });
 
+export type FollowupSnapshot = {
+  contactedAt: string;
+  channel: 'whatsapp' | 'sms' | 'phone' | 'in_person';
+  outcome: 'pending' | 'scheduled' | 'declined' | 'no_response';
+  resolvedAt: string | null;
+};
+
 export type ClientReturnRow = {
   clientId: string;
   fullName: string;
@@ -67,6 +74,7 @@ export type ClientReturnRow = {
   daysUntilReturn: number; // negativo = atrasado, positivo = ainda vai
   appointmentsForProcedure: number;
   isOverdue: boolean;
+  lastFollowup: FollowupSnapshot | null;
 };
 
 /**
@@ -122,6 +130,37 @@ export async function getClientsForReturn(opts: {
     procCounts.set(raw.client_id, (procCounts.get(raw.client_id) ?? 0) + 1);
   }
 
+  // Busca último follow-up por cliente (1 query batch)
+  const candidateIds = Array.from(seen.keys());
+  const followupByClient = new Map<string, FollowupSnapshot>();
+  if (candidateIds.length > 0) {
+    const { data: followups } = await supabase
+      .from('client_followups')
+      .select('client_id, contacted_at, channel, outcome, resolved_at')
+      .in('client_id', candidateIds)
+      .order('contacted_at', { ascending: false });
+
+    type FollowupDbRow = {
+      client_id: string;
+      contacted_at: string;
+      channel: FollowupSnapshot['channel'];
+      outcome: FollowupSnapshot['outcome'];
+      resolved_at: string | null;
+    };
+
+    for (const f of ((followups ?? []) as unknown as FollowupDbRow[])) {
+      if (followupByClient.has(f.client_id)) continue;
+      followupByClient.set(f.client_id, {
+        contactedAt: f.contacted_at,
+        channel: f.channel,
+        outcome: f.outcome,
+        resolvedAt: f.resolved_at,
+      });
+    }
+  }
+
+  const ninetyDaysAgoMs = todayMs - 90 * 86_400_000;
+  const oneHundredEightyDaysAgoMs = todayMs - 180 * 86_400_000;
   const rows: ClientReturnRow[] = [];
 
   for (const [clientId, raw] of seen.entries()) {
@@ -133,6 +172,14 @@ export async function getClientsForReturn(opts: {
     const proc = Array.isArray(raw.procedures) ? raw.procedures[0] : raw.procedures;
     const client = Array.isArray(raw.clients) ? raw.clients[0] : raw.clients;
     if (!client) continue;
+
+    // Filtra clientes resolvidas recentemente
+    const followup = followupByClient.get(clientId) ?? null;
+    if (followup?.resolvedAt) {
+      const resolvedMs = new Date(followup.resolvedAt).getTime();
+      if (followup.outcome === 'scheduled' && resolvedMs > ninetyDaysAgoMs) continue;
+      if (followup.outcome === 'declined' && resolvedMs > oneHundredEightyDaysAgoMs) continue;
+    }
 
     const days = Math.floor((expected.getTime() - todayMs) / 86_400_000);
     rows.push({
@@ -147,11 +194,27 @@ export async function getClientsForReturn(opts: {
       daysUntilReturn: days,
       appointmentsForProcedure: procCounts.get(clientId) ?? 1,
       isOverdue: days < 0,
+      lastFollowup: followup,
     });
   }
 
-  // Ordem: atrasados primeiro (mais atrasado primeiro), depois próximos a vencer
-  return rows.sort((a, b) => a.daysUntilReturn - b.daysUntilReturn);
+  // Ordem: contatadas <48h vão pro fim; resto ordena por urgência
+  return rows.sort((a, b) => {
+    const aRecent = isRecentlyContacted(a.lastFollowup);
+    const bRecent = isRecentlyContacted(b.lastFollowup);
+    if (aRecent && !bRecent) return 1;
+    if (!aRecent && bRecent) return -1;
+    return a.daysUntilReturn - b.daysUntilReturn;
+  });
+}
+
+export function isRecentlyContacted(
+  followup: FollowupSnapshot | null,
+  hours = 48,
+): boolean {
+  if (!followup || followup.outcome !== 'pending') return false;
+  const contactedMs = new Date(followup.contactedAt).getTime();
+  return Date.now() - contactedMs < hours * 3600 * 1000;
 }
 
 export type MissingClientRow = {

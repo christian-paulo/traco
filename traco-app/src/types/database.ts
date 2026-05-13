@@ -552,6 +552,60 @@ export type Database = {
           },
         ]
       }
+      client_followups: {
+        Row: {
+          channel: Database["public"]["Enums"]["followup_channel"]
+          client_id: string
+          contacted_at: string
+          created_at: string
+          id: string
+          notes: string | null
+          outcome: Database["public"]["Enums"]["followup_outcome"]
+          resolved_at: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          channel: Database["public"]["Enums"]["followup_channel"]
+          client_id: string
+          contacted_at?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          outcome?: Database["public"]["Enums"]["followup_outcome"]
+          resolved_at?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          channel?: Database["public"]["Enums"]["followup_channel"]
+          client_id?: string
+          contacted_at?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          outcome?: Database["public"]["Enums"]["followup_outcome"]
+          resolved_at?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_followups_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_followups_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_reactions: {
         Row: {
           appointment_id: string | null
@@ -1906,6 +1960,8 @@ export type Database = {
         | "equipment"
         | "tax"
         | "other"
+      followup_channel: "whatsapp" | "sms" | "phone" | "in_person"
+      followup_outcome: "pending" | "scheduled" | "declined" | "no_response"
       goal_period: "week" | "month" | "quarter" | "year"
       goal_status: "active" | "achieved" | "failed" | "cancelled"
       goal_type:
@@ -2083,6 +2139,8 @@ export const Constants = {
         "tax",
         "other",
       ],
+      followup_channel: ["whatsapp", "sms", "phone", "in_person"],
+      followup_outcome: ["pending", "scheduled", "declined", "no_response"],
       goal_period: ["week", "month", "quarter", "year"],
       goal_status: ["active", "achieved", "failed", "cancelled"],
       goal_type: [

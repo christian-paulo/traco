@@ -1,4 +1,4 @@
-import { Briefcase, Calendar, Clock, Users } from 'lucide-react';
+import { Briefcase, Calendar, Clock, MessageCircle, Users } from 'lucide-react';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,9 @@ type Props = {
   appointmentsCount: number;
   uniqueClients: number;
   totalMinutes: number;
+  followupsContacted: number;
+  followupsScheduled: number;
+  conversionRate: number;
   shareHref: string;
 };
 
@@ -55,13 +58,29 @@ const TONE_AMBER: RowTone = {
   cardRing: 'ring-[var(--gold-light)]/60',
 };
 
+const TONE_GREEN: RowTone = {
+  iconBg: 'bg-emerald-100',
+  iconColor: 'text-emerald-700',
+  valueColor: 'text-foreground',
+  cardBg: 'bg-emerald-50/50',
+  cardRing: 'ring-emerald-200',
+};
+
 export function EffortCard({
   daysWithAppointments,
   appointmentsCount,
   uniqueClients,
   totalMinutes,
+  followupsContacted,
+  followupsScheduled,
+  conversionRate,
   shareHref,
 }: Props) {
+  const conversionLabel =
+    followupsContacted > 0
+      ? `${Math.round(conversionRate * 100)}% conversão · ${followupsScheduled} agendaram`
+      : 'nenhum contato neste período';
+
   const rows = [
     {
       icon: Calendar,
@@ -90,6 +109,13 @@ export function EffortCard({
       suffix: 'horas',
       label: 'atendidas',
       tone: TONE_AMBER,
+    },
+    {
+      icon: MessageCircle,
+      value: followupsContacted,
+      suffix: followupsContacted === 1 ? 'cliente' : 'clientes',
+      label: conversionLabel,
+      tone: TONE_GREEN,
     },
   ];
 
