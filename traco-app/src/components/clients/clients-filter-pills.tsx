@@ -1,23 +1,26 @@
 'use client';
 
+import { BarChart3 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 
 import { cn } from '@/lib/utils';
 
+export type ClientsFilter = 'todas' | 'recuperar' | 'relatorios';
+
 type Props = {
   recoverCount: number;
-  active: 'todas' | 'recuperar';
+  active: ClientsFilter;
 };
 
 export function ClientsFilterPills({ recoverCount, active }: Props) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  function buildHref(filtro: 'todas' | 'recuperar'): string {
+  function buildHref(filtro: ClientsFilter): string {
     const params = new URLSearchParams(searchParams.toString());
-    if (filtro === 'recuperar') params.set('filtro', 'recuperar');
-    else params.delete('filtro');
+    if (filtro === 'todas') params.delete('filtro');
+    else params.set('filtro', filtro);
     const qs = params.toString();
     return qs ? `${pathname}?${qs}` : pathname;
   }
@@ -53,6 +56,18 @@ export function ClientsFilterPills({ recoverCount, active }: Props) {
           ) : null}
         </Link>
       ) : null}
+      <Link
+        href={buildHref('relatorios')}
+        className={cn(
+          'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] transition-colors',
+          active === 'relatorios'
+            ? 'border-[var(--gold)] bg-[var(--gold)]/10 text-foreground'
+            : 'border-cream-dark text-muted-foreground hover:border-[var(--gold)]/40',
+        )}
+      >
+        <BarChart3 className="size-3" />
+        Relatórios
+      </Link>
     </div>
   );
 }

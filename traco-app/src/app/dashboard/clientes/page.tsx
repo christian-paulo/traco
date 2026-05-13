@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 
 import { ClientsEmptyState } from '@/components/clients/clients-empty-state';
 import { ClientsFilterPills } from '@/components/clients/clients-filter-pills';
+import { ClientsReportView } from '@/components/clients/clients-report-view';
 import { ClientsTable } from '@/components/clients/clients-table';
 import { ClientsToolbar } from '@/components/clients/clients-toolbar';
 import { NewClientButton } from '@/components/clients/new-client-button';
@@ -13,7 +14,16 @@ import {
   listAllTags,
   listClients,
 } from '@/lib/queries/clients';
+import {
+  getClientsReport,
+  type ClientReportType,
+} from '@/lib/queries/clients-report';
 import { getDefaultMessageTemplate } from '@/lib/queries/message-templates';
+import {
+  isPeriodPreset,
+  resolvePeriod,
+  type PeriodPreset,
+} from '@/lib/performance/period';
 import { getCurrentProfile } from '@/lib/queries/profile';
 import { createClient } from '@/lib/supabase/server';
 
@@ -21,7 +31,15 @@ export const metadata: Metadata = {
   title: 'Clientes | Traço',
 };
 
-type SearchParams = Promise<{ search?: string; tag?: string; filtro?: string }>;
+type SearchParams = Promise<{
+  search?: string;
+  tag?: string;
+  filtro?: string;
+  range?: string;
+  from?: string;
+  to?: string;
+  tipo?: string;
+}>;
 
 const DEFAULT_WHATSAPP_TEMPLATE =
   'Olá! Vi que faz {dias} dias do meu último {procedimento}. Gostaria de agendar meu retorno.';
@@ -34,8 +52,43 @@ export default async function ClientesPage({
   const params = await searchParams;
   const search = params.search ?? '';
   const tag = params.tag ?? '';
-  const filtro: 'todas' | 'recuperar' =
-    params.filtro === 'recuperar' ? 'recuperar' : 'todas';
+  const filtro: 'todas' | 'recuperar' | 'relatorios' =
+    params.filtro === 'recuperar'
+      ? 'recuperar'
+      : params.filtro === 'relatorios'
+        ? 'relatorios'
+        : 'todas';
+
+  if (filtro === 'relatorios') {
+    const preset: PeriodPreset = isPeriodPreset(params.range)
+      ? params.range
+      : 'mes-atual';
+    const range = resolvePeriod(preset, params.from, params.to);
+    const type: ClientReportType =
+      params.tipo === 'appointments' ? 'appointments' : 'revenue';
+    const [report, recoverClients] = await Promise.all([
+      getClientsReport(range.fromIso, range.toIso, type),
+      getClientsToRecover(),
+    ]);
+
+    return (
+      <div className="flex flex-col gap-8">
+        <header className="flex flex-col gap-2">
+          <div className="h-px w-8 bg-[var(--gold)]" />
+          <h1 className="font-serif text-4xl font-medium tracking-tight text-foreground">
+            Clientes
+          </h1>
+          <p className="text-xs font-medium uppercase tracking-[0.3em] text-muted-foreground">
+            Relatórios — quem mais gera receita e atendimentos
+          </p>
+        </header>
+
+        <ClientsFilterPills recoverCount={recoverClients.length} active="relatorios" />
+
+        <ClientsReportView report={report} range={range} />
+      </div>
+    );
+  }
 
   if (filtro === 'recuperar') {
     const profile = await getCurrentProfile();
