@@ -36,9 +36,9 @@ function DialogOverlay({
         className
       )}
       style={{
-        backgroundColor: "rgba(0, 0, 0, 0.7)",
-        backdropFilter: "blur(8px)",
-        WebkitBackdropFilter: "blur(8px)",
+        backgroundColor: "rgba(0, 0, 0, 0.45)",
+        backdropFilter: "blur(4px)",
+        WebkitBackdropFilter: "blur(4px)",
       }}
       {...props}
     />
