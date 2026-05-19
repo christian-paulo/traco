@@ -5,6 +5,7 @@ import { AcademyAdminPanel } from '@/components/academy/admin/academy-admin-pane
 import { BookingPolicyForm } from '@/components/configuracoes/booking-policy-form';
 import { MensagensTab } from '@/components/configuracoes/mensagens-tab';
 import { PrivacyForm } from '@/components/configuracoes/privacy-form';
+import { PushNotificationsCard } from '@/components/configuracoes/push-notifications-card';
 import { RestartOnboardingButton } from '@/components/configuracoes/restart-onboarding-button';
 import { ProceduresList } from '@/components/configuracoes/procedures-list';
 import { ProfileForm } from '@/components/configuracoes/profile-form';
@@ -15,6 +16,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { isAdmin } from '@/lib/queries/academy';
 import { listMessageTemplates } from '@/lib/queries/message-templates';
+import { getVapidPublicKey } from '@/lib/push';
 import { listProcedures } from '@/lib/queries/procedures';
 import { getCurrentProfile } from '@/lib/queries/profile';
 import { getSharingPreferences } from '@/lib/queries/sharing';
@@ -74,6 +76,7 @@ export default async function ConfiguracoesPage({
     sharingPrefs,
     admin,
     messageTemplates,
+    pushSubsResult,
   ] = await Promise.all([
     listProcedures(true),
     profile
@@ -95,6 +98,13 @@ export default async function ConfiguracoesPage({
     getSharingPreferences(),
     isAdmin(),
     listMessageTemplates(),
+    profile
+      ? supabase
+          .from('push_subscriptions')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', profile.id)
+          .eq('enabled', true)
+      : Promise.resolve({ count: 0 }),
   ]);
 
   const [workingHours, timeOff] = professional
@@ -253,6 +263,24 @@ export default async function ConfiguracoesPage({
                     Studio não disponível. Aplique a migração 03.
                   </p>
                 )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card variant="premium" className="bg-card border-0 ring-1 ring-[var(--border)] py-6">
+            <CardContent className="flex flex-col gap-2 px-6">
+              <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                Notificações
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Receba alertas de retornos atrasados e resumo diário direto no celular ou
+                no navegador.
+              </p>
+              <div className="mt-3">
+                <PushNotificationsCard
+                  vapidPublicKey={getVapidPublicKey()}
+                  enabledOnThisDevice={(pushSubsResult.count ?? 0) > 0}
+                />
               </div>
             </CardContent>
           </Card>

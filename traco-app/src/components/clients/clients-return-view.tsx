@@ -26,8 +26,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { getInitials } from '@/lib/format';
+import { isRecentlyContacted } from '@/lib/followups/snapshot';
 import type { ClientReturnRow } from '@/lib/queries/clients-followup';
-import { isRecentlyContacted } from '@/lib/queries/clients-followup';
 import type { ProcedureRow } from '@/lib/queries/procedures';
 import { cn } from '@/lib/utils';
 import {

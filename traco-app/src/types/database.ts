@@ -1610,6 +1610,56 @@ export type Database = {
           },
         ]
       }
+      push_subscriptions: {
+        Row: {
+          auth_secret: string
+          created_at: string
+          device_label: string | null
+          enabled: boolean
+          endpoint: string
+          id: string
+          last_sent_at: string | null
+          p256dh: string
+          tenant_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auth_secret: string
+          created_at?: string
+          device_label?: string | null
+          enabled?: boolean
+          endpoint: string
+          id?: string
+          last_sent_at?: string | null
+          p256dh: string
+          tenant_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auth_secret?: string
+          created_at?: string
+          device_label?: string | null
+          enabled?: boolean
+          endpoint?: string
+          id?: string
+          last_sent_at?: string | null
+          p256dh?: string
+          tenant_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sharing_preferences: {
         Row: {
           created_at: string
